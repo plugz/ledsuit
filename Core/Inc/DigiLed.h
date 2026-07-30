@@ -10,6 +10,9 @@
 #include "main.h"
 //#include "spi.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* defines */
 #define 	LED_FRAME_SIZE   		201		///< \define number of LEDs in the chain
@@ -52,9 +55,8 @@ void DigiLed_update(uint8_t forceUpdate);
 uint8_t DigiLed_getFrameSize(void);
 uint8_t DigiLed_TestPosition(uint8_t led);
 
-
-
-
-
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* DIGITALLED_H_ */

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 4.00)
 
 #
 # This file is generated only once,
@@ -12,18 +12,13 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
-#XXX nope, use       cmake --toolchain cmake/gcc-arm-none-eabi.cmake -G "MinGW Makefiles" ..
-#include(cmake/gcc-arm-none-eabi.cmake)
-
+set(CMAKE_CXX_STANDARD 26)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Define the build type
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
-
-# XXX Fix cross-compile test issue
-#set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
-
 
 # Set the project name
 set(CMAKE_PROJECT_NAME ledsuit)
@@ -37,6 +32,7 @@ message("Build type: " ${CMAKE_BUILD_TYPE})
 
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
+enable_language(CXX)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
@@ -53,6 +49,7 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
 
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/LedSuit.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/DigiLed.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/lsm6ds3tr-c_reg.c
 
