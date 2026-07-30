@@ -3,12 +3,5 @@ mingw32-make VERBOSE=1
 
 openocd -f interface/stlink.cfg -f target/stm32f1x.cfg -c "program ledsuit.elf verify reset"
 
-gdb-multiarch
-file ledsuit.elf
-target extended-remote localhost:3333
-set remote hardware-breakpoint-limit 6
-set remote hardware-watchpoint-limit 4
-monitor reset halt
-load
+arm-none-eabi-gdb -x ../gdbinit
 run
-
