@@ -1,122 +1,16 @@
 #include "ledsuit.h"
 
-#include "DigiLed.h"
+#include "LedStrip.hpp"
 #include "lsm6ds3tr-c_reg.h"
+#include "OnBoardLeds.hpp"
 
 #include "gpio.h"
 #include "main.h"
 #include "spi.h"
-#include "tim.h"
 
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-
-
-/*static uint32_t const PXM_LEDS_GREEN_PWM_MIN = 0x006a;
-static uint32_t const PXM_LEDS_GREEN_PWM_MAX = 0x004d;
-static uint32_t const PXM_LEDS_ORANGE_PWM_MIN = 0x006a;
-static uint32_t const PXM_LEDS_ORANGE_PWM_MAX = 0x0000;
-static uint32_t const PXM_LEDS_WHITE_PWM_MIN = 0x00cc;
-static uint32_t const PXM_LEDS_WHITE_PWM_MAX = 0x0000;*/
-
-static uint32_t const PXM_LEDS_GREEN_PWM_MIN = 100;
-static uint32_t const PXM_LEDS_GREEN_PWM_MAX = 77;
-static uint32_t const PXM_LEDS_ORANGE_PWM_MIN = 100;
-static uint32_t const PXM_LEDS_ORANGE_PWM_MAX = 0;
-static uint32_t const PXM_LEDS_WHITE_PWM_MIN = 100;
-static uint32_t const PXM_LEDS_WHITE_PWM_MAX = 50;
-
-static uint32_t const PXM_LEDS_PWM_MIN[8] = {
-    PXM_LEDS_ORANGE_PWM_MIN,
-    PXM_LEDS_GREEN_PWM_MIN,
-    PXM_LEDS_GREEN_PWM_MIN,
-    PXM_LEDS_ORANGE_PWM_MIN,
-    PXM_LEDS_ORANGE_PWM_MIN,
-    PXM_LEDS_GREEN_PWM_MIN,
-    PXM_LEDS_WHITE_PWM_MIN,
-    PXM_LEDS_WHITE_PWM_MIN,
-};
-
-static uint32_t const PXM_LEDS_PWM_MAX[8] = {
-    PXM_LEDS_ORANGE_PWM_MAX,
-    PXM_LEDS_GREEN_PWM_MAX,
-    PXM_LEDS_GREEN_PWM_MAX,
-    PXM_LEDS_ORANGE_PWM_MAX,
-    PXM_LEDS_ORANGE_PWM_MAX,
-    PXM_LEDS_GREEN_PWM_MAX,
-    PXM_LEDS_WHITE_PWM_MAX,
-    PXM_LEDS_WHITE_PWM_MAX,
-};
-
-static TIM_HandleTypeDef* const PXM_LEDS_TIMER[8] = {
-    &htim4,
-    &htim4,
-    &htim4,
-    &htim4,
-    &htim2,
-    &htim2,
-    &htim2,
-    &htim2
-};
-
-static uint32_t const PXM_LEDS_CHAN[8] = {
-    TIM_CHANNEL_4,
-    TIM_CHANNEL_3,
-    TIM_CHANNEL_1,
-    TIM_CHANNEL_2,
-    TIM_CHANNEL_2,
-    TIM_CHANNEL_1,
-    TIM_CHANNEL_4,
-    TIM_CHANNEL_3
-};
-
-// leds orders :
-// x0, x1, y0, y1, z0, z1, white0, white1
-
-
-// val 0-255
-void pxm_led_set(unsigned int idx, unsigned int val) {
-
-    {
-        static uint32_t prevTime[8] = {0};
-        uint32_t curTime = HAL_GetTick();
-        if (curTime - prevTime[idx] < 20) {
-            return;
-        }
-        prevTime[idx] += ((curTime - prevTime[idx]) / 20) * 20;
-    }
-
-    static unsigned int pulses[8] = {0};
-
-    //unsigned int vaval = val;
-
-    TIM_OC_InitTypeDef sConfigOC = {0};
-    sConfigOC.OCMode = TIM_OCMODE_PWM1;
-    sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-    sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-
-    // max is 0xff
-    val = val < 300 ? val : 300;
-    // revert because led is activated by a sink
-    val = 300 - val;
-    unsigned int newPulse = (val * (PXM_LEDS_PWM_MIN[idx] - PXM_LEDS_PWM_MAX[idx])) / 300 + PXM_LEDS_PWM_MAX[idx];
-    if (newPulse != pulses[idx]) {
-        pulses[idx] = newPulse;
-        sConfigOC.Pulse = newPulse;
-        HAL_TIM_PWM_ConfigChannel(PXM_LEDS_TIMER[idx], &sConfigOC, PXM_LEDS_CHAN[idx]);
-        HAL_TIM_PWM_Start(PXM_LEDS_TIMER[idx], PXM_LEDS_CHAN[idx]);
-    }
-
-
-    //printf("led%u vaval %u val%u pulse%u\n", idx, vaval, val, (unsigned int)sConfigOC.Pulse);
-}
-
-static void pxm_leds_off() {
-    for (unsigned int i = 0; i < 8; ++i) {
-        pxm_led_set(i, 0);
-    }
-}
 
 // for debug printf
 int __io_putchar(int ch)
@@ -125,7 +19,6 @@ int __io_putchar(int ch)
     ITM_SendChar(ch);
     return(ch);
 }
-
 
 // LSM6DS3TR-C IMU
 
@@ -152,6 +45,7 @@ static int32_t imu_platform_write(void *nHandle, uint8_t reg, const uint8_t *buf
     HAL_GPIO_WritePin(SPI1_NCS_GYR_GPIO_Port, SPI1_NCS_GYR_Pin, GPIO_PIN_SET);
     return 0;
 }
+
 static int32_t imu_platform_read(void *nHandle, uint8_t reg, uint8_t *bufp, uint16_t len) {
     SPI_HandleTypeDef* handle = (SPI_HandleTypeDef*)nHandle;
     reg |= 0x80;
@@ -161,20 +55,18 @@ static int32_t imu_platform_read(void *nHandle, uint8_t reg, uint8_t *bufp, uint
     HAL_GPIO_WritePin(SPI1_NCS_GYR_GPIO_Port, SPI1_NCS_GYR_Pin, GPIO_PIN_SET);
     return 0;
 }
+
 static void imu_platform_delay(uint32_t ms) {
     HAL_Delay(ms);
 }
+
 static void imu_platform_init(void) {
 }
-
 
 void ledsuit_init_beforeloop() {
     pxm_leds_off();
 
-    DigiLed_init(&hspi2);
-    DigiLed_setAllRGB(0x00);
-    DigiLed_setAllIllumination(0x09); // 0 - 31    0x00 - 0x1f
-    DigiLed_update(0);
+    ledstrip_init();
 
     // IMU
 
@@ -226,11 +118,8 @@ void ledsuit_tick() {
     static int counter = 0;
     static int ascend = 1;
 
-    static bool blinkin = true;
     static float yaw = 0.0f;
     static float yawLenMg = 1.0f;
-
-    static uint8_t myLedz[LED_FRAME_SIZE] = {0,};
 
     // Read output only if new value is available
     lsm6ds3tr_c_reg_t reg;
@@ -288,23 +177,21 @@ void ledsuit_tick() {
         }
         avg /= ANGLEHISTSIZE;
 
-        //blinkin = (avg > 9500);
-
         static uint32_t blinkinTime = 0;
         uint32_t curTime = HAL_GetTick();
 
         if (avg > 9500) {
             if (blinkinTime) {
-                blinkin = (curTime - blinkinTime > 600);
+                ledstrip_setblinkin(curTime - blinkinTime > 600);
             }
             else {
-                blinkin = false;
+                ledstrip_setblinkin(false);
                 blinkinTime = curTime;
             }
         }
         else {
+            ledstrip_setblinkin(false);
             blinkinTime = 0;
-            blinkin = false;
         }
 
         /*		  static uint32_t firstBigAngleTime = 0;
@@ -343,36 +230,7 @@ void ledsuit_tick() {
         //	  imu_angular_rate_mdps[0], imu_angular_rate_mdps[1], imu_angular_rate_mdps[2]);
     }
 
-    int const virtualLedCount = LED_FRAME_SIZE + 8;
-    int const yawLedIdx = (yaw / (2 * M_PI)) * virtualLedCount;
-    //int const invYawLedIdx = (yawLedIdx + (virtualLedCount / 2)) % virtualLedCount;
-
-    for (int i = 0; i < LED_FRAME_SIZE; ++i) {
-        if ((abs(i - yawLedIdx) < 4) || (abs(i + virtualLedCount - yawLedIdx) < 4) || (abs(i - virtualLedCount - yawLedIdx) < 4)) {
-            myLedz[i] = 0xff;
-        }
-    }
-
-
-    static uint32_t prevTime = 0;
-    uint32_t curTime = HAL_GetTick();
-    if (curTime - prevTime > 2) {
-        for (int i = 0; i < LED_FRAME_SIZE; ++i) {
-            if (blinkin) {
-                if (((curTime / 30) % 4) == (((i + curTime / 120) / 8) % 4))
-                    DigiLed_setColor(i, 0xff, 0x15, 0xff);
-                else
-                    DigiLed_setColor(i, 0x00, 0x00, 0x00);
-            } else {
-                DigiLed_setColor(i, myLedz[i], 0, myLedz[i]);
-            }
-            for (unsigned int j = 0; j < 5 && myLedz[i]; ++j) {
-                --myLedz[i];
-            }
-        }
-        do { prevTime += 2; } while (prevTime < curTime);
-    }
-    DigiLed_update(0);
+    ledstrip_tick(yaw);
 
     if (reg.status_reg.tda) {
         // Read temperature data
@@ -395,7 +253,7 @@ void ledsuit_tick() {
 
 
 
-    int counter2 = 0xff - (counter & 0xff);
+    //int counter2 = 0xff - (counter & 0xff);
 
     //	for (unsigned int i = 0; i < 8; ++i) {
     //		pxm_led_set(i, counter);
