@@ -49,6 +49,7 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
 
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/Imu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/LedStrip.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/LedSuit.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/OnBoardLeds.cpp
