@@ -7,9 +7,13 @@
 #include "gpio.h"
 #include "main.h"
 
+#include "Eigen"
+
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+
+#define ANGLEHISTSIZE 32
 
 // for debug printf
 int __io_putchar(int ch)
@@ -31,8 +35,13 @@ void ledsuit_tick() {
     static int counter = 0;
     static int ascend = 1;
 
+
+
     static float yaw = 0.0f;
     static float yawLenMg = 1.0f;
+
+    static Eigen::Quaternionf accelQuaternion;
+
 
     static float imu_acceleration_mg[3];
     static float imu_angular_rate_mdps[3];
@@ -56,14 +65,10 @@ void ledsuit_tick() {
         yaw += M_PI;
 
         yawLenMg = sqrtf(imu_acceleration_mg[0] * imu_acceleration_mg[0] + imu_acceleration_mg[1] * imu_acceleration_mg[1]);
-        //printf("Acceleration [mg]:%4.2f\t%4.2f\t%4.2f\r\n",
-        //       imu_acceleration_mg[0], imu_acceleration_mg[1], imu_acceleration_mg[2]);
+
     }
 
     if (imu_angular_rate_fetch(imu_angular_rate_mdps)) {
-        // Read magnetic field data
-
-#define ANGLEHISTSIZE 32
         static float prevAngles[ANGLEHISTSIZE] = {0.0f,};
         static int prevAnglesIdx = 0;
 
