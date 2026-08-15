@@ -67,6 +67,9 @@ static uint32_t const PXM_LEDS_CHAN[8] = {
 // val 0-255
 void pxm_led_set(unsigned int idx, unsigned int val) {
 
+    // all onboard off
+    val = 0;
+
     {
         static uint32_t prevTime[8] = {0};
         uint32_t curTime = HAL_GetTick();

@@ -129,23 +129,23 @@ void imu_tick() {
     }
 }
 
-bool imu_accel_fetch(float* result_accel_mg) {
+bool imu_accel_fetch(Eigen::Vector3f* result_accel_mg) {
     if (!accel_updated)
         return false;
 
-    result_accel_mg[0] = lsm6ds3tr_c_from_fs16g_to_mg(imu_data_raw_acceleration[0]);
-    result_accel_mg[1] = lsm6ds3tr_c_from_fs16g_to_mg(imu_data_raw_acceleration[1]);
-    result_accel_mg[2] = lsm6ds3tr_c_from_fs16g_to_mg(imu_data_raw_acceleration[2]);
+    *result_accel_mg = {lsm6ds3tr_c_from_fs16g_to_mg(imu_data_raw_acceleration[0]),
+        lsm6ds3tr_c_from_fs16g_to_mg(imu_data_raw_acceleration[1]),
+        lsm6ds3tr_c_from_fs16g_to_mg(imu_data_raw_acceleration[2])};
     return true;
 }
 
-bool imu_angular_rate_fetch(float* result_angular_rate_mdps) {
+bool imu_angular_rate_fetch(Eigen::Vector3f* result_angular_rate_mdps) {
     if (!angular_rate_updated)
         return false;
 
-    result_angular_rate_mdps[0] = lsm6ds3tr_c_from_fs2000dps_to_mdps(imu_data_raw_angular_rate[0]);
-    result_angular_rate_mdps[1] = lsm6ds3tr_c_from_fs2000dps_to_mdps(imu_data_raw_angular_rate[1]);
-    result_angular_rate_mdps[2] = lsm6ds3tr_c_from_fs2000dps_to_mdps(imu_data_raw_angular_rate[2]);
+    *result_angular_rate_mdps = {lsm6ds3tr_c_from_fs2000dps_to_mdps(imu_data_raw_angular_rate[0]),
+        lsm6ds3tr_c_from_fs2000dps_to_mdps(imu_data_raw_angular_rate[1]),
+        lsm6ds3tr_c_from_fs2000dps_to_mdps(imu_data_raw_angular_rate[2])};
     return true;
 }
 

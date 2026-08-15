@@ -58,7 +58,8 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+// XXX test itm out
+//void initialise_monitor_handles();
 /* USER CODE END 0 */
 
 /**
@@ -92,11 +93,15 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI1_Init();
   MX_SPI2_Init();
-  //MX_USB_DEVICE_Init();
+//#ifdef USB_DEBUG_OUTPUT
+//  MX_USB_DEVICE_Init();
+//#endif
   MX_TIM4_Init();
   MX_USART1_UART_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+// XXX test itm out
+//  initialise_monitor_handles();
   ledsuit_init_beforeloop();
   /* USER CODE END 2 */
 

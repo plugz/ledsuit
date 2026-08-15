@@ -15,7 +15,7 @@ extern "C" {
 #endif
 
 /* defines */
-#define 	LED_FRAME_SIZE   		201		///< \define number of LEDs in the chain
+#define 	LED_FRAME_SIZE   		6		///< \define number of LEDs in the chain
 
 #define 	FALSE 					0		// false value
 #define 	TRUE 					1		// true value
