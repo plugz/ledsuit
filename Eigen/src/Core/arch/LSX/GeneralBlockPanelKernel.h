@@ -1,6 +1,4 @@
 // IWYU pragma: private
-// SPDX-FileCopyrightText: The Eigen Authors
-// SPDX-License-Identifier: MPL-2.0
 #include "../../InternalHeaderCheck.h"
 
 namespace Eigen {

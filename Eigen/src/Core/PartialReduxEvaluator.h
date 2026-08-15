@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_PARTIALREDUX_H
 #define EIGEN_PARTIALREDUX_H
@@ -36,19 +35,19 @@ namespace internal {
  * on the inner unrolling.
  *
  * For the unrolling, we can reuse "internal::redux_vec_unroller" from Redux.h,
- * but we need to be careful to specify correct increment.
+ * but be need to be careful to specify correct increment.
  *
  ***************************************************************************/
 
 /* logic deciding a strategy for unrolling of vectorized paths */
 template <typename Func, typename Evaluator>
 struct packetwise_redux_traits {
-  static constexpr int OuterSize =
-      int(Evaluator::IsRowMajor) ? Evaluator::RowsAtCompileTime : Evaluator::ColsAtCompileTime;
-  static constexpr int Cost = OuterSize == Dynamic
-                                  ? HugeCost
-                                  : OuterSize * Evaluator::CoeffReadCost + (OuterSize - 1) * functor_traits<Func>::Cost;
-  static constexpr int Unrolling = Cost <= EIGEN_UNROLLING_LIMIT ? CompleteUnrolling : NoUnrolling;
+  enum {
+    OuterSize = int(Evaluator::IsRowMajor) ? Evaluator::RowsAtCompileTime : Evaluator::ColsAtCompileTime,
+    Cost = OuterSize == Dynamic ? HugeCost
+                                : OuterSize * Evaluator::CoeffReadCost + (OuterSize - 1) * functor_traits<Func>::Cost,
+    Unrolling = Cost <= EIGEN_UNROLLING_LIMIT ? CompleteUnrolling : NoUnrolling
+  };
 };
 
 /* Value to be returned when size==0 , by default let's return 0 */
@@ -71,8 +70,8 @@ struct packetwise_redux_impl;
 /* Perform the actual reduction with unrolling */
 template <typename Func, typename Evaluator>
 struct packetwise_redux_impl<Func, Evaluator, CompleteUnrolling> {
-  using Base = redux_novec_unroller<Func, Evaluator, 0, Evaluator::SizeAtCompileTime>;
-  using Scalar = typename Evaluator::Scalar;
+  typedef redux_novec_unroller<Func, Evaluator, 0, Evaluator::SizeAtCompileTime> Base;
+  typedef typename Evaluator::Scalar Scalar;
 
   template <typename PacketType>
   EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE PacketType run(const Evaluator& eval, const Func& func, Index /*size*/) {
@@ -97,8 +96,8 @@ struct redux_vec_unroller<Func, Evaluator, Start, 0> {
 /* Perform the actual reduction for dynamic sizes */
 template <typename Func, typename Evaluator>
 struct packetwise_redux_impl<Func, Evaluator, NoUnrolling> {
-  using Scalar = typename Evaluator::Scalar;
-  using PacketScalar = typename redux_traits<Func, Evaluator>::PacketType;
+  typedef typename Evaluator::Scalar Scalar;
+  typedef typename redux_traits<Func, Evaluator>::PacketType PacketScalar;
 
   template <typename PacketType>
   EIGEN_DEVICE_FUNC static PacketType run(const Evaluator& eval, const Func& func, Index size) {
@@ -123,26 +122,16 @@ struct packetwise_redux_impl<Func, Evaluator, NoUnrolling> {
 
 template <typename Func, typename Evaluator>
 struct packetwise_segment_redux_impl {
-  using Scalar = typename Evaluator::Scalar;
-  using PacketScalar = typename redux_traits<Func, Evaluator>::PacketType;
+  typedef typename Evaluator::Scalar Scalar;
+  typedef typename redux_traits<Func, Evaluator>::PacketType PacketScalar;
 
   template <typename PacketType>
   EIGEN_DEVICE_FUNC static PacketType run(const Evaluator& eval, const Func& func, Index size, Index begin,
                                           Index count) {
     if (size == 0) return packetwise_redux_empty_value<PacketType>(func);
 
-    const Index size4 = 1 + numext::round_down(size - 1, 4);
     PacketType p = eval.template packetSegmentByOuterInner<Unaligned, PacketType>(0, 0, begin, count);
-    // Grouping exposes independent packet ops and shortens the dependency chain.
-    for (Index i = 1; i < size4; i += 4)
-      p = func.packetOp(
-          p,
-          func.packetOp(
-              func.packetOp(eval.template packetSegmentByOuterInner<Unaligned, PacketType>(i + 0, 0, begin, count),
-                            eval.template packetSegmentByOuterInner<Unaligned, PacketType>(i + 1, 0, begin, count)),
-              func.packetOp(eval.template packetSegmentByOuterInner<Unaligned, PacketType>(i + 2, 0, begin, count),
-                            eval.template packetSegmentByOuterInner<Unaligned, PacketType>(i + 3, 0, begin, count))));
-    for (Index i = size4; i < size; ++i)
+    for (Index i = 1; i < size; ++i)
       p = func.packetOp(p, eval.template packetSegmentByOuterInner<Unaligned, PacketType>(i, 0, begin, count));
     return p;
   }
@@ -151,16 +140,16 @@ struct packetwise_segment_redux_impl {
 template <typename ArgType, typename MemberOp, int Direction>
 struct evaluator<PartialReduxExpr<ArgType, MemberOp, Direction> >
     : evaluator_base<PartialReduxExpr<ArgType, MemberOp, Direction> > {
-  using XprType = PartialReduxExpr<ArgType, MemberOp, Direction>;
-  using ArgTypeNested = typename internal::nested_eval<ArgType, 1>::type;
-  using ConstArgTypeNested = add_const_on_value_type_t<ArgTypeNested>;
-  using ArgTypeNestedCleaned = internal::remove_all_t<ArgTypeNested>;
-  using InputScalar = typename ArgType::Scalar;
-  using Scalar = typename XprType::Scalar;
+  typedef PartialReduxExpr<ArgType, MemberOp, Direction> XprType;
+  typedef typename internal::nested_eval<ArgType, 1>::type ArgTypeNested;
+  typedef add_const_on_value_type_t<ArgTypeNested> ConstArgTypeNested;
+  typedef internal::remove_all_t<ArgTypeNested> ArgTypeNestedCleaned;
+  typedef typename ArgType::Scalar InputScalar;
+  typedef typename XprType::Scalar Scalar;
   enum {
     TraversalSize = Direction == int(Vertical) ? int(ArgType::RowsAtCompileTime) : int(ArgType::ColsAtCompileTime)
   };
-  using CostOpType = typename MemberOp::template Cost<int(TraversalSize)>;
+  typedef typename MemberOp::template Cost<int(TraversalSize)> CostOpType;
   enum {
     CoeffReadCost = TraversalSize == Dynamic ? HugeCost
                     : TraversalSize == 0
@@ -179,13 +168,13 @@ struct evaluator<PartialReduxExpr<ArgType, MemberOp, Direction> >
     Alignment = 0  // FIXME this will need to be improved once PartialReduxExpr is vectorized
   };
 
-  EIGEN_DEVICE_FUNC explicit evaluator(const XprType& xpr) : m_arg(xpr.nestedExpression()), m_functor(xpr.functor()) {
+  EIGEN_DEVICE_FUNC explicit evaluator(const XprType xpr) : m_arg(xpr.nestedExpression()), m_functor(xpr.functor()) {
     EIGEN_INTERNAL_CHECK_COST_VALUE(TraversalSize == Dynamic ? HugeCost
                                                              : (TraversalSize == 0 ? 1 : int(CostOpType::value)));
     EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
   }
 
-  using CoeffReturnType = typename XprType::CoeffReturnType;
+  typedef typename XprType::CoeffReturnType CoeffReturnType;
 
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar coeff(Index i, Index j) const {
     return coeff(Direction == Vertical ? j : i);
@@ -210,10 +199,11 @@ struct evaluator<PartialReduxExpr<ArgType, MemberOp, Direction> >
     using BinaryOp = typename MemberOp::BinaryOp;
     using Impl = internal::packetwise_redux_impl<BinaryOp, PanelEvaluator>;
 
-    // Workaround for issue 1612 (closed): when PacketSize==1 (i.e. complex<double> with 128bits registers) the
-    // storage-order of panel gets reversed and methods like packetByOuterInner do not make sense in this context, so
-    // bypass "vectorization":
-    EIGEN_IF_CONSTEXPR (PacketSize == 1) return internal::pset1<PacketType>(coeff(idx));
+    // FIXME
+    // See bug 1612, currently if PacketSize==1 (i.e. complex<double> with 128bits registers) then the storage-order of
+    // panel get reversed and methods like packetByOuterInner do not make sense anymore in this context. So let's just
+    // by pass "vectorization" in this case:
+    if (PacketSize == 1) return internal::pset1<PacketType>(coeff(idx));
 
     Index startRow = Direction == Vertical ? 0 : idx;
     Index startCol = Direction == Vertical ? idx : 0;

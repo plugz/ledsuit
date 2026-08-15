@@ -8,7 +8,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_REVERSE_H
 #define EIGEN_REVERSE_H
@@ -22,11 +21,11 @@ namespace internal {
 
 template <typename MatrixType, int Direction>
 struct traits<Reverse<MatrixType, Direction> > : traits<MatrixType> {
-  using Scalar = typename MatrixType::Scalar;
-  using StorageKind = typename traits<MatrixType>::StorageKind;
-  using XprKind = typename traits<MatrixType>::XprKind;
-  using MatrixTypeNested = typename ref_selector<MatrixType>::type;
-  using MatrixTypeNested_ = std::remove_reference_t<MatrixTypeNested>;
+  typedef typename MatrixType::Scalar Scalar;
+  typedef typename traits<MatrixType>::StorageKind StorageKind;
+  typedef typename traits<MatrixType>::XprKind XprKind;
+  typedef typename ref_selector<MatrixType>::type MatrixTypeNested;
+  typedef std::remove_reference_t<MatrixTypeNested> MatrixTypeNested_;
   enum {
     RowsAtCompileTime = MatrixType::RowsAtCompileTime,
     ColsAtCompileTime = MatrixType::ColsAtCompileTime,
@@ -65,9 +64,9 @@ struct reverse_packet_cond<PacketType, false> {
 template <typename MatrixType, int Direction>
 class Reverse : public internal::dense_xpr_base<Reverse<MatrixType, Direction> >::type {
  public:
-  using Base = typename internal::dense_xpr_base<Reverse>::type;
+  typedef typename internal::dense_xpr_base<Reverse>::type Base;
   EIGEN_DENSE_PUBLIC_INTERFACE(Reverse)
-  using NestedExpression = internal::remove_all_t<MatrixType>;
+  typedef internal::remove_all_t<MatrixType> NestedExpression;
   using Base::IsRowMajor;
 
  protected:
@@ -81,10 +80,10 @@ class Reverse : public internal::dense_xpr_base<Reverse<MatrixType, Direction> >
     ReversePacket = (Direction == BothDirections) || ((Direction == Vertical) && IsColMajor) ||
                     ((Direction == Horizontal) && IsRowMajor)
   };
-  using reverse_packet = internal::reverse_packet_cond<PacketScalar, ReversePacket>;
+  typedef internal::reverse_packet_cond<PacketScalar, ReversePacket> reverse_packet;
 
  public:
-  EIGEN_DEVICE_FUNC constexpr explicit inline Reverse(const MatrixType& matrix) : m_matrix(matrix) {}
+  EIGEN_DEVICE_FUNC explicit inline Reverse(const MatrixType& matrix) : m_matrix(matrix) {}
 
   EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Reverse)
 
@@ -93,7 +92,7 @@ class Reverse : public internal::dense_xpr_base<Reverse<MatrixType, Direction> >
 
   EIGEN_DEVICE_FUNC inline Index innerStride() const { return -m_matrix.innerStride(); }
 
-  EIGEN_DEVICE_FUNC constexpr const internal::remove_all_t<typename MatrixType::Nested>& nestedExpression() const {
+  EIGEN_DEVICE_FUNC const internal::remove_all_t<typename MatrixType::Nested>& nestedExpression() const {
     return m_matrix;
   }
 
@@ -112,7 +111,7 @@ EIGEN_DEVICE_FUNC inline typename DenseBase<Derived>::ReverseReturnType DenseBas
   return ReverseReturnType(derived());
 }
 
-// reverse const overload moved to DenseBase.h due to a CUDA compiler bug
+// reverse const overload moved DenseBase.h due to a CUDA compiler bug
 
 /** This is the "in place" version of reverse: it reverses \c *this.
  *

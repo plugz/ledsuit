@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 /*
 
@@ -40,7 +39,7 @@ namespace internal {
 
 template <typename IndexVector>
 struct panel_dfs_traits {
-  using StorageIndex = typename IndexVector::Scalar;
+  typedef typename IndexVector::Scalar StorageIndex;
   panel_dfs_traits(Index jcol, StorageIndex* marker) : m_jcol(jcol), m_marker(marker) {}
   bool update_segrep(Index krep, StorageIndex jj) {
     if (m_marker[krep] < m_jcol) {
@@ -136,10 +135,13 @@ void SparseLUImpl<Scalar, StorageIndex>::dfs_kernel(const StorageIndex jj, Index
         //    Place snode-rep krep in postorder DFS, if this
         //    segment is seen for the first time. (Note that
         //    "repfnz(krep)" may change later.)
-        //    Backtrack dfs to its parent
-        if (traits.update_segrep(krep, jj)) {
+        //    Baktrack dfs to its parent
+        if (traits.update_segrep(krep, jj))
+        // if (marker1(krep) < jcol )
+        {
           segrep(nseg) = krep;
           ++nseg;
+          // marker1(krep) = jj;
         }
 
         kpar = parent(krep);            // Pop recursion, mimic recursion

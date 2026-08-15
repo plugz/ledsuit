@@ -7,7 +7,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_FUZZY_H
 #define EIGEN_FUZZY_H
@@ -87,8 +86,8 @@ struct isMuchSmallerThan_scalar_selector<Derived, true> {
  */
 template <typename Derived>
 template <typename OtherDerived>
-EIGEN_DEVICE_FUNC constexpr bool DenseBase<Derived>::isApprox(const DenseBase<OtherDerived>& other,
-                                                              const RealScalar& prec) const {
+EIGEN_DEVICE_FUNC bool DenseBase<Derived>::isApprox(const DenseBase<OtherDerived>& other,
+                                                    const RealScalar& prec) const {
   return internal::isApprox_selector<Derived, OtherDerived>::run(derived(), other.derived(), prec);
 }
 
@@ -106,8 +105,8 @@ EIGEN_DEVICE_FUNC constexpr bool DenseBase<Derived>::isApprox(const DenseBase<Ot
  * \sa isApprox(), isMuchSmallerThan(const DenseBase<OtherDerived>&, RealScalar) const
  */
 template <typename Derived>
-EIGEN_DEVICE_FUNC constexpr bool DenseBase<Derived>::isMuchSmallerThan(const typename NumTraits<Scalar>::Real& other,
-                                                                       const RealScalar& prec) const {
+EIGEN_DEVICE_FUNC bool DenseBase<Derived>::isMuchSmallerThan(const typename NumTraits<Scalar>::Real& other,
+                                                             const RealScalar& prec) const {
   return internal::isMuchSmallerThan_scalar_selector<Derived>::run(derived(), other, prec);
 }
 
@@ -123,8 +122,8 @@ EIGEN_DEVICE_FUNC constexpr bool DenseBase<Derived>::isMuchSmallerThan(const typ
  */
 template <typename Derived>
 template <typename OtherDerived>
-EIGEN_DEVICE_FUNC constexpr bool DenseBase<Derived>::isMuchSmallerThan(const DenseBase<OtherDerived>& other,
-                                                                       const RealScalar& prec) const {
+EIGEN_DEVICE_FUNC bool DenseBase<Derived>::isMuchSmallerThan(const DenseBase<OtherDerived>& other,
+                                                             const RealScalar& prec) const {
   return internal::isMuchSmallerThan_object_selector<Derived, OtherDerived>::run(derived(), other.derived(), prec);
 }
 

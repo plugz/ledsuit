@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_REAL_QZ_H
 #define EIGEN_REAL_QZ_H
@@ -27,9 +26,9 @@ namespace Eigen {
  * real QZ decomposition; this is expected to be an instantiation of the
  * Matrix class template.
  *
- * Given real square matrices A and B, this class computes the real QZ
+ * Given a real square matrices A and B, this class computes the real QZ
  * decomposition: \f$ A = Q S Z \f$, \f$ B = Q T Z \f$ where Q and Z are
- * real orthogonal matrices, T is upper-triangular matrix, and S is upper
+ * real orthogonal matrixes, T is upper-triangular matrix, and S is upper
  * quasi-triangular matrix. An orthogonal matrix is a matrix whose
  * inverse is equal to its transpose, \f$ U^{-1} = U^T \f$. A quasi-triangular
  * matrix is a block-triangular matrix whose diagonal consists of 1-by-1
@@ -41,7 +40,7 @@ namespace Eigen {
  *
  * Call the function compute() to compute the real QZ decomposition of a
  * given pair of matrices. Alternatively, you can use the
- * RealQZ(const MatrixType& A, const MatrixType& B, bool computeQZ)
+ * RealQZ(const MatrixType& B, const MatrixType& B, bool computeQZ)
  * constructor which computes the real QZ decomposition at construction
  * time. Once the decomposition is computed, you can use the matrixS(),
  * matrixT(), matrixQ() and matrixZ() functions to retrieve the matrices
@@ -61,7 +60,7 @@ namespace Eigen {
 template <typename MatrixType_>
 class RealQZ {
  public:
-  using MatrixType = MatrixType_;
+  typedef MatrixType_ MatrixType;
   enum {
     RowsAtCompileTime = MatrixType::RowsAtCompileTime,
     ColsAtCompileTime = MatrixType::ColsAtCompileTime,
@@ -69,12 +68,12 @@ class RealQZ {
     MaxRowsAtCompileTime = MatrixType::MaxRowsAtCompileTime,
     MaxColsAtCompileTime = MatrixType::MaxColsAtCompileTime
   };
-  using Scalar = typename MatrixType::Scalar;
-  using ComplexScalar = internal::make_complex_t<Scalar>;
-  using Index = Eigen::Index;  ///< \deprecated since Eigen 3.3
+  typedef typename MatrixType::Scalar Scalar;
+  typedef internal::make_complex_t<Scalar> ComplexScalar;
+  typedef Eigen::Index Index;  ///< \deprecated since Eigen 3.3
 
-  using EigenvalueType = Matrix<ComplexScalar, ColsAtCompileTime, 1, Options & ~RowMajor, MaxColsAtCompileTime, 1>;
-  using ColumnVectorType = Matrix<Scalar, ColsAtCompileTime, 1, Options & ~RowMajor, MaxColsAtCompileTime, 1>;
+  typedef Matrix<ComplexScalar, ColsAtCompileTime, 1, Options & ~RowMajor, MaxColsAtCompileTime, 1> EigenvalueType;
+  typedef Matrix<Scalar, ColsAtCompileTime, 1, Options & ~RowMajor, MaxColsAtCompileTime, 1> ColumnVectorType;
 
   /** \brief Default constructor.
    *
@@ -101,7 +100,7 @@ class RealQZ {
    *
    * \param[in]  A          Matrix A.
    * \param[in]  B          Matrix B.
-   * \param[in]  computeQZ  If false, Q and Z are not computed.
+   * \param[in]  computeQZ  If false, A and Z are not computed.
    *
    * This constructor calls compute() to compute the QZ decomposition.
    */
@@ -159,7 +158,7 @@ class RealQZ {
    *
    * \param[in]  A          Matrix A.
    * \param[in]  B          Matrix B.
-   * \param[in]  computeQZ  If false, Q and Z are not computed.
+   * \param[in]  computeQZ  If false, A and Z are not computed.
    * \returns    Reference to \c *this
    */
   RealQZ& compute(const MatrixType& A, const MatrixType& B, bool computeQZ = true);
@@ -198,10 +197,10 @@ class RealQZ {
   Scalar m_normOfT, m_normOfS;
   Index m_global_iter;
 
-  using Vector3s = Matrix<Scalar, 3, 1>;
-  using Vector2s = Matrix<Scalar, 2, 1>;
-  using Matrix2s = Matrix<Scalar, 2, 2>;
-  using JRs = JacobiRotation<Scalar>;
+  typedef Matrix<Scalar, 3, 1> Vector3s;
+  typedef Matrix<Scalar, 2, 1> Vector2s;
+  typedef Matrix<Scalar, 2, 2> Matrix2s;
+  typedef JacobiRotation<Scalar> JRs;
 
   void hessenbergTriangular();
   void computeNorms();
@@ -541,15 +540,13 @@ RealQZ<MatrixType>& RealQZ<MatrixType>::compute(const MatrixType& A_in, const Ma
         // zero found
         pushDownZero(z, f, l);
       } else {
-        // We are sure now that S.block(f,f, l-f+1,l-f+1) is unreduced upper-Hessenberg
-        // and T.block(f,f, l-f+1,l-f+1) is invertible upper-triangular, which allows to
+        // We are sure now that S.block(f,f, l-f+1,l-f+1) is underuced upper-Hessenberg
+        // and T.block(f,f, l-f+1,l-f+1) is invertible uper-triangular, which allows to
         // apply a QR-like iteration to rows and columns f..l.
         step(f, l, local_iter);
-        // count QR-like steps
+        local_iter++;
         m_global_iter++;
       }
-      // count iterations toward m_maxIters
-      local_iter++;
     }
   }
   // check if we converged before reaching iterations limit
@@ -587,4 +584,4 @@ RealQZ<MatrixType>& RealQZ<MatrixType>::compute(const MatrixType& A_in, const Ma
 
 }  // end namespace Eigen
 
-#endif  // EIGEN_REAL_QZ_H
+#endif  // EIGEN_REAL_QZ

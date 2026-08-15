@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_SELFADJOINT_MATRIX_MATRIX_H
 #define EIGEN_SELFADJOINT_MATRIX_MATRIX_H
@@ -23,7 +22,7 @@ template <typename Scalar, typename Index, int Pack1, int Pack2_dummy, int Stora
 struct symm_pack_lhs {
   template <int BlockRows>
   inline void pack(Scalar* blockA, const const_blas_data_mapper<Scalar, Index, StorageOrder>& lhs, Index cols, Index i,
-                   Index& count) const {
+                   Index& count) {
     // normal copy
     for (Index k = 0; k < i; k++)
       for (Index w = 0; w < BlockRows; w++) blockA[count++] = lhs(i + w, k);  // normal
@@ -41,10 +40,10 @@ struct symm_pack_lhs {
     for (Index k = i + BlockRows; k < cols; k++)
       for (Index w = 0; w < BlockRows; w++) blockA[count++] = numext::conj(lhs(k, i + w));  // transposed
   }
-  void operator()(Scalar* blockA, const Scalar* lhs_, Index lhsStride, Index cols, Index rows) const {
-    using HalfPacket = typename unpacket_traits<typename packet_traits<Scalar>::type>::half;
-    using QuarterPacket =
-        typename unpacket_traits<typename unpacket_traits<typename packet_traits<Scalar>::type>::half>::half;
+  void operator()(Scalar* blockA, const Scalar* lhs_, Index lhsStride, Index cols, Index rows) {
+    typedef typename unpacket_traits<typename packet_traits<Scalar>::type>::half HalfPacket;
+    typedef typename unpacket_traits<typename unpacket_traits<typename packet_traits<Scalar>::type>::half>::half
+        QuarterPacket;
     enum {
       PacketSize = packet_traits<Scalar>::size,
       HalfPacketSize = unpacket_traits<HalfPacket>::size,
@@ -55,6 +54,7 @@ struct symm_pack_lhs {
 
     const_blas_data_mapper<Scalar, Index, StorageOrder> lhs(lhs_, lhsStride);
     Index count = 0;
+    // Index peeled_mc3 = (rows/Pack1)*Pack1;
 
     const Index peeled_mc3 = Pack1 >= 3 * PacketSize ? (rows / (3 * PacketSize)) * (3 * PacketSize) : 0;
     const Index peeled_mc2 =
@@ -68,20 +68,20 @@ struct symm_pack_lhs {
             ? peeled_mc_half + ((rows - peeled_mc_half) / (QuarterPacketSize)) * (QuarterPacketSize)
             : 0;
 
-    EIGEN_IF_CONSTEXPR (Pack1 >= 3 * PacketSize)
+    if (Pack1 >= 3 * PacketSize)
       for (Index i = 0; i < peeled_mc3; i += 3 * PacketSize) pack<3 * PacketSize>(blockA, lhs, cols, i, count);
 
-    EIGEN_IF_CONSTEXPR (Pack1 >= 2 * PacketSize)
+    if (Pack1 >= 2 * PacketSize)
       for (Index i = peeled_mc3; i < peeled_mc2; i += 2 * PacketSize) pack<2 * PacketSize>(blockA, lhs, cols, i, count);
 
-    EIGEN_IF_CONSTEXPR (Pack1 >= 1 * PacketSize)
+    if (Pack1 >= 1 * PacketSize)
       for (Index i = peeled_mc2; i < peeled_mc1; i += 1 * PacketSize) pack<1 * PacketSize>(blockA, lhs, cols, i, count);
 
-    EIGEN_IF_CONSTEXPR (HasHalf && Pack1 >= HalfPacketSize)
+    if (HasHalf && Pack1 >= HalfPacketSize)
       for (Index i = peeled_mc1; i < peeled_mc_half; i += HalfPacketSize)
         pack<HalfPacketSize>(blockA, lhs, cols, i, count);
 
-    EIGEN_IF_CONSTEXPR (HasQuarter && Pack1 >= QuarterPacketSize)
+    if (HasQuarter && Pack1 >= QuarterPacketSize)
       for (Index i = peeled_mc_half; i < peeled_mc_quarter; i += QuarterPacketSize)
         pack<QuarterPacketSize>(blockA, lhs, cols, i, count);
 
@@ -99,7 +99,7 @@ struct symm_pack_lhs {
 template <typename Scalar, typename Index, int nr, int StorageOrder>
 struct symm_pack_rhs {
   enum { PacketSize = packet_traits<Scalar>::size };
-  void operator()(Scalar* blockB, const Scalar* rhs_, Index rhsStride, Index rows, Index cols, Index k2) const {
+  void operator()(Scalar* blockB, const Scalar* rhs_, Index rhsStride, Index rows, Index cols, Index k2) {
     Index end_k = k2 + rows;
     Index count = 0;
     const_blas_data_mapper<Scalar, Index, StorageOrder> rhs(rhs_, rhsStride);
@@ -111,11 +111,11 @@ struct symm_pack_rhs {
       for (Index k = k2; k < end_k; k++) {
         blockB[count + 0] = rhs(k, j2 + 0);
         blockB[count + 1] = rhs(k, j2 + 1);
-        EIGEN_IF_CONSTEXPR (nr >= 4) {
+        if (nr >= 4) {
           blockB[count + 2] = rhs(k, j2 + 2);
           blockB[count + 3] = rhs(k, j2 + 3);
         }
-        EIGEN_IF_CONSTEXPR (nr >= 8) {
+        if (nr >= 8) {
           blockB[count + 4] = rhs(k, j2 + 4);
           blockB[count + 5] = rhs(k, j2 + 5);
           blockB[count + 6] = rhs(k, j2 + 6);
@@ -127,7 +127,7 @@ struct symm_pack_rhs {
 
     // second part: diagonal block
     Index end8 = nr >= 8 ? (std::min)(k2 + rows, packet_cols8) : k2;
-    EIGEN_IF_CONSTEXPR (nr >= 8) {
+    if (nr >= 8) {
       for (Index j2 = k2; j2 < end8; j2 += 8) {
         // again we can split vertically in three different parts (transpose, symmetric, normal)
         // transpose
@@ -169,7 +169,7 @@ struct symm_pack_rhs {
         }
       }
     }
-    EIGEN_IF_CONSTEXPR (nr >= 4) {
+    if (nr >= 4) {
       for (Index j2 = end8; j2 < (std::min)(k2 + rows, packet_cols4); j2 += 4) {
         // again we can split vertically in three different parts (transpose, symmetric, normal)
         // transpose
@@ -205,7 +205,7 @@ struct symm_pack_rhs {
     }
 
     // third part: transposed
-    EIGEN_IF_CONSTEXPR (nr >= 8) {
+    if (nr >= 8) {
       for (Index j2 = k2 + rows; j2 < packet_cols8; j2 += 8) {
         for (Index k = k2; k < end_k; k++) {
           blockB[count + 0] = numext::conj(rhs(j2 + 0, k));
@@ -220,7 +220,7 @@ struct symm_pack_rhs {
         }
       }
     }
-    EIGEN_IF_CONSTEXPR (nr >= 4) {
+    if (nr >= 4) {
       for (Index j2 = (std::max)(packet_cols8, k2 + rows); j2 < packet_cols4; j2 += 4) {
         for (Index k = k2; k < end_k; k++) {
           blockB[count + 0] = numext::conj(rhs(j2 + 0, k));
@@ -298,12 +298,12 @@ product_selfadjoint_matrix<Scalar, Index, LhsStorageOrder, true, ConjugateLhs, R
                                                           level3_blocking<Scalar, Scalar>& blocking) {
   Index size = rows;
 
-  using Traits = gebp_traits<Scalar, Scalar>;
+  typedef gebp_traits<Scalar, Scalar> Traits;
 
-  using LhsMapper = const_blas_data_mapper<Scalar, Index, LhsStorageOrder>;
-  using LhsTransposeMapper = const_blas_data_mapper<Scalar, Index, (LhsStorageOrder == RowMajor) ? ColMajor : RowMajor>;
-  using RhsMapper = const_blas_data_mapper<Scalar, Index, RhsStorageOrder>;
-  using ResMapper = blas_data_mapper<typename Traits::ResScalar, Index, ColMajor, Unaligned, ResInnerStride>;
+  typedef const_blas_data_mapper<Scalar, Index, LhsStorageOrder> LhsMapper;
+  typedef const_blas_data_mapper<Scalar, Index, (LhsStorageOrder == RowMajor) ? ColMajor : RowMajor> LhsTransposeMapper;
+  typedef const_blas_data_mapper<Scalar, Index, RhsStorageOrder> RhsMapper;
+  typedef blas_data_mapper<typename Traits::ResScalar, Index, ColMajor, Unaligned, ResInnerStride> ResMapper;
   LhsMapper lhs(lhs_, lhsStride);
   LhsTransposeMapper lhs_transpose(lhs_, lhsStride);
   RhsMapper rhs(rhs_, rhsStride);
@@ -383,10 +383,10 @@ product_selfadjoint_matrix<Scalar, Index, LhsStorageOrder, false, ConjugateLhs, 
                                                           level3_blocking<Scalar, Scalar>& blocking) {
   Index size = cols;
 
-  using Traits = gebp_traits<Scalar, Scalar>;
+  typedef gebp_traits<Scalar, Scalar> Traits;
 
-  using LhsMapper = const_blas_data_mapper<Scalar, Index, LhsStorageOrder>;
-  using ResMapper = blas_data_mapper<typename Traits::ResScalar, Index, ColMajor, Unaligned, ResInnerStride>;
+  typedef const_blas_data_mapper<Scalar, Index, LhsStorageOrder> LhsMapper;
+  typedef blas_data_mapper<typename Traits::ResScalar, Index, ColMajor, Unaligned, ResInnerStride> ResMapper;
   LhsMapper lhs(lhs_, lhsStride);
   ResMapper res(res_, resStride, resIncr);
 
@@ -428,12 +428,12 @@ namespace internal {
 
 template <typename Lhs, int LhsMode, typename Rhs, int RhsMode>
 struct selfadjoint_product_impl<Lhs, LhsMode, false, Rhs, RhsMode, false> {
-  using Scalar = typename Product<Lhs, Rhs>::Scalar;
+  typedef typename Product<Lhs, Rhs>::Scalar Scalar;
 
-  using LhsBlasTraits = internal::blas_traits<Lhs>;
-  using ActualLhsType = typename LhsBlasTraits::DirectLinearAccessType;
-  using RhsBlasTraits = internal::blas_traits<Rhs>;
-  using ActualRhsType = typename RhsBlasTraits::DirectLinearAccessType;
+  typedef internal::blas_traits<Lhs> LhsBlasTraits;
+  typedef typename LhsBlasTraits::DirectLinearAccessType ActualLhsType;
+  typedef internal::blas_traits<Rhs> RhsBlasTraits;
+  typedef typename RhsBlasTraits::DirectLinearAccessType ActualRhsType;
 
   enum {
     LhsIsUpper = (LhsMode & (Upper | Lower)) == Upper,
@@ -449,15 +449,12 @@ struct selfadjoint_product_impl<Lhs, LhsMode, false, Rhs, RhsMode, false> {
     add_const_on_value_type_t<ActualLhsType> lhs = LhsBlasTraits::extract(a_lhs);
     add_const_on_value_type_t<ActualRhsType> rhs = RhsBlasTraits::extract(a_rhs);
 
-    // Empty product, return early.  Otherwise, we get `nullptr` use errors below when we try to access
-    // coeffRef(0,0).
-    if (lhs.size() == 0 || rhs.size() == 0) return;
-
     Scalar actualAlpha = alpha * LhsBlasTraits::extractScalarFactor(a_lhs) * RhsBlasTraits::extractScalarFactor(a_rhs);
 
-    using BlockingType = internal::gemm_blocking_space<(Dest::Flags & RowMajorBit) ? RowMajor : ColMajor, Scalar,
-                                                       Scalar, Lhs::MaxRowsAtCompileTime, Rhs::MaxColsAtCompileTime,
-                                                       Lhs::MaxColsAtCompileTime, 1>;
+    typedef internal::gemm_blocking_space<(Dest::Flags & RowMajorBit) ? RowMajor : ColMajor, Scalar, Scalar,
+                                          Lhs::MaxRowsAtCompileTime, Rhs::MaxColsAtCompileTime,
+                                          Lhs::MaxColsAtCompileTime, 1>
+        BlockingType;
 
     BlockingType blocking(lhs.rows(), rhs.cols(), lhs.cols(), 1, false);
 

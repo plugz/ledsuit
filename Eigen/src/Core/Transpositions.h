@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_TRANSPOSITIONS_H
 #define EIGEN_TRANSPOSITIONS_H
@@ -18,12 +17,12 @@ namespace Eigen {
 
 template <typename Derived>
 class TranspositionsBase {
-  using Traits = internal::traits<Derived>;
+  typedef internal::traits<Derived> Traits;
 
  public:
-  using IndicesType = typename Traits::IndicesType;
-  using StorageIndex = typename IndicesType::Scalar;
-  using Index = Eigen::Index;  ///< \deprecated since Eigen 3.3
+  typedef typename Traits::IndicesType IndicesType;
+  typedef typename IndicesType::Scalar StorageIndex;
+  typedef Eigen::Index Index;  ///< \deprecated since Eigen 3.3
 
   EIGEN_DEVICE_FUNC Derived& derived() { return *static_cast<Derived*>(this); }
   EIGEN_DEVICE_FUNC const Derived& derived() const { return *static_cast<const Derived*>(this); }
@@ -94,14 +93,16 @@ class TranspositionsBase {
 
   /** \returns the transpose transformation */
   inline Transpose<TranspositionsBase> transpose() const { return Transpose<TranspositionsBase>(derived()); }
+
+ protected:
 };
 
 namespace internal {
 template <int SizeAtCompileTime, int MaxSizeAtCompileTime, typename StorageIndex_>
 struct traits<Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime, StorageIndex_> >
     : traits<PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime, StorageIndex_> > {
-  using IndicesType = Matrix<StorageIndex_, SizeAtCompileTime, 1, 0, MaxSizeAtCompileTime, 1>;
-  using StorageKind = TranspositionsStorage;
+  typedef Matrix<StorageIndex_, SizeAtCompileTime, 1, 0, MaxSizeAtCompileTime, 1> IndicesType;
+  typedef TranspositionsStorage StorageKind;
 };
 }  // namespace internal
 
@@ -138,12 +139,12 @@ struct traits<Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime, StorageInd
 template <int SizeAtCompileTime, int MaxSizeAtCompileTime, typename StorageIndex_>
 class Transpositions
     : public TranspositionsBase<Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime, StorageIndex_> > {
-  using Traits = internal::traits<Transpositions>;
+  typedef internal::traits<Transpositions> Traits;
 
  public:
-  using Base = TranspositionsBase<Transpositions>;
-  using IndicesType = typename Traits::IndicesType;
-  using StorageIndex = typename IndicesType::Scalar;
+  typedef TranspositionsBase<Transpositions> Base;
+  typedef typename Traits::IndicesType IndicesType;
+  typedef typename IndicesType::Scalar StorageIndex;
 
   inline Transpositions() {}
 
@@ -178,9 +179,9 @@ namespace internal {
 template <int SizeAtCompileTime, int MaxSizeAtCompileTime, typename StorageIndex_, int PacketAccess_>
 struct traits<Map<Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime, StorageIndex_>, PacketAccess_> >
     : traits<PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime, StorageIndex_> > {
-  using IndicesType = Map<const Matrix<StorageIndex_, SizeAtCompileTime, 1, 0, MaxSizeAtCompileTime, 1>, PacketAccess_>;
-  using StorageIndex = StorageIndex_;
-  using StorageKind = TranspositionsStorage;
+  typedef Map<const Matrix<StorageIndex_, SizeAtCompileTime, 1, 0, MaxSizeAtCompileTime, 1>, PacketAccess_> IndicesType;
+  typedef StorageIndex_ StorageIndex;
+  typedef TranspositionsStorage StorageKind;
 };
 }  // namespace internal
 
@@ -188,12 +189,12 @@ template <int SizeAtCompileTime, int MaxSizeAtCompileTime, typename StorageIndex
 class Map<Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime, StorageIndex_>, PacketAccess>
     : public TranspositionsBase<
           Map<Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime, StorageIndex_>, PacketAccess> > {
-  using Traits = internal::traits<Map>;
+  typedef internal::traits<Map> Traits;
 
  public:
-  using Base = TranspositionsBase<Map>;
-  using IndicesType = typename Traits::IndicesType;
-  using StorageIndex = typename IndicesType::Scalar;
+  typedef TranspositionsBase<Map> Base;
+  typedef typename Traits::IndicesType IndicesType;
+  typedef typename IndicesType::Scalar StorageIndex;
 
   explicit inline Map(const StorageIndex* indicesPtr) : m_indices(indicesPtr) {}
 
@@ -228,18 +229,18 @@ class Map<Transpositions<SizeAtCompileTime, MaxSizeAtCompileTime, StorageIndex_>
 namespace internal {
 template <typename IndicesType_>
 struct traits<TranspositionsWrapper<IndicesType_> > : traits<PermutationWrapper<IndicesType_> > {
-  using StorageKind = TranspositionsStorage;
+  typedef TranspositionsStorage StorageKind;
 };
 }  // namespace internal
 
 template <typename IndicesType_>
 class TranspositionsWrapper : public TranspositionsBase<TranspositionsWrapper<IndicesType_> > {
-  using Traits = internal::traits<TranspositionsWrapper>;
+  typedef internal::traits<TranspositionsWrapper> Traits;
 
  public:
-  using Base = TranspositionsBase<TranspositionsWrapper>;
-  using IndicesType = typename Traits::IndicesType;
-  using StorageIndex = typename IndicesType::Scalar;
+  typedef TranspositionsBase<TranspositionsWrapper> Base;
+  typedef typename Traits::IndicesType IndicesType;
+  typedef typename IndicesType::Scalar StorageIndex;
 
   explicit inline TranspositionsWrapper(IndicesType& indices) : m_indices(indices) {}
 
@@ -286,8 +287,8 @@ struct traits<Transpose<TranspositionsBase<Derived> > > : traits<Derived> {};
 
 template <typename TranspositionsDerived>
 class Transpose<TranspositionsBase<TranspositionsDerived> > {
-  using TranspositionType = TranspositionsDerived;
-  using IndicesType = typename TranspositionType::IndicesType;
+  typedef TranspositionsDerived TranspositionType;
+  typedef typename TranspositionType::IndicesType IndicesType;
 
  public:
   explicit Transpose(const TranspositionType& t) : m_transpositions(t) {}

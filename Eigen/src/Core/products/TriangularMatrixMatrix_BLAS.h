@@ -29,7 +29,6 @@
  *   Triangular matrix * matrix product functionality based on ?TRMM.
  ********************************************************************************
 */
-// SPDX-License-Identifier: BSD-3-Clause
 
 #ifndef EIGEN_TRIANGULAR_MATRIX_MATRIX_BLAS_H
 #define EIGEN_TRIANGULAR_MATRIX_MATRIX_BLAS_H
@@ -144,7 +143,7 @@ EIGEN_BLAS_TRMM_SPECIALIZE(scomplex, false)
       Map<const MatrixRhs, 0, OuterStride<> > rhs(_rhs, depth, cols, OuterStride<>(rhsStride));                        \
       MatrixX##EIGPREFIX b_tmp;                                                                                        \
                                                                                                                        \
-      EIGEN_IF_CONSTEXPR (ConjugateRhs)                                                                                \
+      if (ConjugateRhs)                                                                                                \
         b_tmp = rhs.conjugate();                                                                                       \
       else                                                                                                             \
         b_tmp = rhs;                                                                                                   \
@@ -153,21 +152,19 @@ EIGEN_BLAS_TRMM_SPECIALIZE(scomplex, false)
                                                                                                                        \
       /* Set uplo */                                                                                                   \
       uplo = IsLower ? 'L' : 'U';                                                                                      \
-      EIGEN_IF_CONSTEXPR (LhsStorageOrder == RowMajor) {                                                               \
-        uplo = (uplo == 'L') ? 'U' : 'L';                                                                              \
-      }                                                                                                                \
+      if (LhsStorageOrder == RowMajor) uplo = (uplo == 'L') ? 'U' : 'L';                                               \
       /* Set a, lda */                                                                                                 \
       Map<const MatrixLhs, 0, OuterStride<> > lhs(_lhs, rows, depth, OuterStride<>(lhsStride));                        \
       MatrixLhs a_tmp;                                                                                                 \
                                                                                                                        \
-      EIGEN_IF_CONSTEXPR ((conjA != 0) || (SetDiag == 0)) {                                                            \
-        EIGEN_IF_CONSTEXPR (conjA)                                                                                     \
+      if ((conjA != 0) || (SetDiag == 0)) {                                                                            \
+        if (conjA)                                                                                                     \
           a_tmp = lhs.conjugate();                                                                                     \
         else                                                                                                           \
           a_tmp = lhs;                                                                                                 \
-        EIGEN_IF_CONSTEXPR (IsZeroDiag)                                                                                \
+        if (IsZeroDiag)                                                                                                \
           a_tmp.diagonal().setZero();                                                                                  \
-        else EIGEN_IF_CONSTEXPR (IsUnitDiag)                                                                           \
+        else if (IsUnitDiag)                                                                                           \
           a_tmp.diagonal().setOnes();                                                                                  \
         a = a_tmp.data();                                                                                              \
         lda = convert_index<BlasIndex>(a_tmp.outerStride());                                                           \
@@ -192,10 +189,10 @@ EIGEN_BLAS_TRMM_L(dcomplex, MKL_Complex16, cd, ztrmm)
 EIGEN_BLAS_TRMM_L(float, float, f, strmm)
 EIGEN_BLAS_TRMM_L(scomplex, MKL_Complex8, cf, ctrmm)
 #else
-EIGEN_BLAS_TRMM_L(double, double, d, EIGEN_BLAS_SYM(dtrmm))
-EIGEN_BLAS_TRMM_L(dcomplex, double, cd, EIGEN_BLAS_SYM(ztrmm))
-EIGEN_BLAS_TRMM_L(float, float, f, EIGEN_BLAS_SYM(strmm))
-EIGEN_BLAS_TRMM_L(scomplex, float, cf, EIGEN_BLAS_SYM(ctrmm))
+EIGEN_BLAS_TRMM_L(double, double, d, dtrmm_)
+EIGEN_BLAS_TRMM_L(dcomplex, double, cd, ztrmm_)
+EIGEN_BLAS_TRMM_L(float, float, f, strmm_)
+EIGEN_BLAS_TRMM_L(scomplex, float, cf, ctrmm_)
 #endif
 
 // implements col-major += alpha * op(general) * op(triangular)
@@ -270,7 +267,7 @@ EIGEN_BLAS_TRMM_L(scomplex, float, cf, EIGEN_BLAS_SYM(ctrmm))
       Map<const MatrixLhs, 0, OuterStride<> > lhs(_lhs, rows, depth, OuterStride<>(lhsStride));                        \
       MatrixX##EIGPREFIX b_tmp;                                                                                        \
                                                                                                                        \
-      EIGEN_IF_CONSTEXPR (ConjugateLhs)                                                                                \
+      if (ConjugateLhs)                                                                                                \
         b_tmp = lhs.conjugate();                                                                                       \
       else                                                                                                             \
         b_tmp = lhs;                                                                                                   \
@@ -279,21 +276,19 @@ EIGEN_BLAS_TRMM_L(scomplex, float, cf, EIGEN_BLAS_SYM(ctrmm))
                                                                                                                        \
       /* Set uplo */                                                                                                   \
       uplo = IsLower ? 'L' : 'U';                                                                                      \
-      EIGEN_IF_CONSTEXPR (RhsStorageOrder == RowMajor) {                                                               \
-        uplo = (uplo == 'L') ? 'U' : 'L';                                                                              \
-      }                                                                                                                \
+      if (RhsStorageOrder == RowMajor) uplo = (uplo == 'L') ? 'U' : 'L';                                               \
       /* Set a, lda */                                                                                                 \
       Map<const MatrixRhs, 0, OuterStride<> > rhs(_rhs, depth, cols, OuterStride<>(rhsStride));                        \
       MatrixRhs a_tmp;                                                                                                 \
                                                                                                                        \
-      EIGEN_IF_CONSTEXPR ((conjA != 0) || (SetDiag == 0)) {                                                            \
-        EIGEN_IF_CONSTEXPR (conjA)                                                                                     \
+      if ((conjA != 0) || (SetDiag == 0)) {                                                                            \
+        if (conjA)                                                                                                     \
           a_tmp = rhs.conjugate();                                                                                     \
         else                                                                                                           \
           a_tmp = rhs;                                                                                                 \
-        EIGEN_IF_CONSTEXPR (IsZeroDiag)                                                                                \
+        if (IsZeroDiag)                                                                                                \
           a_tmp.diagonal().setZero();                                                                                  \
-        else EIGEN_IF_CONSTEXPR (IsUnitDiag)                                                                           \
+        else if (IsUnitDiag)                                                                                           \
           a_tmp.diagonal().setOnes();                                                                                  \
         a = a_tmp.data();                                                                                              \
         lda = convert_index<BlasIndex>(a_tmp.outerStride());                                                           \
@@ -318,15 +313,11 @@ EIGEN_BLAS_TRMM_R(dcomplex, MKL_Complex16, cd, ztrmm)
 EIGEN_BLAS_TRMM_R(float, float, f, strmm)
 EIGEN_BLAS_TRMM_R(scomplex, MKL_Complex8, cf, ctrmm)
 #else
-EIGEN_BLAS_TRMM_R(double, double, d, EIGEN_BLAS_SYM(dtrmm))
-EIGEN_BLAS_TRMM_R(dcomplex, double, cd, EIGEN_BLAS_SYM(ztrmm))
-EIGEN_BLAS_TRMM_R(float, float, f, EIGEN_BLAS_SYM(strmm))
-EIGEN_BLAS_TRMM_R(scomplex, float, cf, EIGEN_BLAS_SYM(ctrmm))
+EIGEN_BLAS_TRMM_R(double, double, d, dtrmm_)
+EIGEN_BLAS_TRMM_R(dcomplex, double, cd, ztrmm_)
+EIGEN_BLAS_TRMM_R(float, float, f, strmm_)
+EIGEN_BLAS_TRMM_R(scomplex, float, cf, ctrmm_)
 #endif
-
-#undef EIGEN_BLAS_TRMM_SPECIALIZE
-#undef EIGEN_BLAS_TRMM_L
-#undef EIGEN_BLAS_TRMM_R
 }  // end namespace internal
 
 }  // end namespace Eigen

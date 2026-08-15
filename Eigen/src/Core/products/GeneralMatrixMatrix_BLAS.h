@@ -29,7 +29,6 @@
  *   General matrix-matrix product functionality based on ?GEMM.
  ********************************************************************************
 */
-// SPDX-License-Identifier: BSD-3-Clause
 
 #ifndef EIGEN_GENERAL_MATRIX_MATRIX_BLAS_H
 #define EIGEN_GENERAL_MATRIX_MATRIX_BLAS_H
@@ -50,7 +49,7 @@ namespace internal {
 
 // gemm specialization
 
-#define EIGEN_BLAS_GEMM_SPECIALIZATION(EIGTYPE, EIGPREFIX, BLASTYPE, BLASFUNC)                                      \
+#define GEMM_SPECIALIZATION(EIGTYPE, EIGPREFIX, BLASTYPE, BLASFUNC)                                                 \
   template <typename Index, int LhsStorageOrder, bool ConjugateLhs, int RhsStorageOrder, bool ConjugateRhs>         \
   struct general_matrix_matrix_product<Index, EIGTYPE, LhsStorageOrder, ConjugateLhs, EIGTYPE, RhsStorageOrder,     \
                                        ConjugateRhs, ColMajor, 1> {                                                 \
@@ -84,7 +83,7 @@ namespace internal {
       ldc = convert_index<BlasIndex>(resStride);                                                                    \
                                                                                                                     \
       /* Set a, b, c */                                                                                             \
-      EIGEN_IF_CONSTEXPR ((LhsStorageOrder == ColMajor) && (ConjugateLhs)) {                                        \
+      if ((LhsStorageOrder == ColMajor) && (ConjugateLhs)) {                                                        \
         Map<const MatrixX##EIGPREFIX, 0, OuterStride<> > lhs(lhs_, m, k, OuterStride<>(lhsStride));                 \
         a_tmp = lhs.conjugate();                                                                                    \
         a = a_tmp.data();                                                                                           \
@@ -92,7 +91,7 @@ namespace internal {
       } else                                                                                                        \
         a = lhs_;                                                                                                   \
                                                                                                                     \
-      EIGEN_IF_CONSTEXPR ((RhsStorageOrder == ColMajor) && (ConjugateRhs)) {                                        \
+      if ((RhsStorageOrder == ColMajor) && (ConjugateRhs)) {                                                        \
         Map<const MatrixX##EIGPREFIX, 0, OuterStride<> > rhs(rhs_, k, n, OuterStride<>(rhsStride));                 \
         b_tmp = rhs.conjugate();                                                                                    \
         b = b_tmp.data();                                                                                           \
@@ -106,15 +105,15 @@ namespace internal {
   };
 
 #ifdef EIGEN_USE_MKL
-EIGEN_BLAS_GEMM_SPECIALIZATION(double, d, double, dgemm)
-EIGEN_BLAS_GEMM_SPECIALIZATION(float, f, float, sgemm)
-EIGEN_BLAS_GEMM_SPECIALIZATION(dcomplex, cd, MKL_Complex16, zgemm)
-EIGEN_BLAS_GEMM_SPECIALIZATION(scomplex, cf, MKL_Complex8, cgemm)
+GEMM_SPECIALIZATION(double, d, double, dgemm)
+GEMM_SPECIALIZATION(float, f, float, sgemm)
+GEMM_SPECIALIZATION(dcomplex, cd, MKL_Complex16, zgemm)
+GEMM_SPECIALIZATION(scomplex, cf, MKL_Complex8, cgemm)
 #else
-EIGEN_BLAS_GEMM_SPECIALIZATION(double, d, double, EIGEN_BLAS_SYM(dgemm))
-EIGEN_BLAS_GEMM_SPECIALIZATION(float, f, float, EIGEN_BLAS_SYM(sgemm))
-EIGEN_BLAS_GEMM_SPECIALIZATION(dcomplex, cd, double, EIGEN_BLAS_SYM(zgemm))
-EIGEN_BLAS_GEMM_SPECIALIZATION(scomplex, cf, float, EIGEN_BLAS_SYM(cgemm))
+GEMM_SPECIALIZATION(double, d, double, dgemm_)
+GEMM_SPECIALIZATION(float, f, float, sgemm_)
+GEMM_SPECIALIZATION(dcomplex, cd, double, zgemm_)
+GEMM_SPECIALIZATION(scomplex, cf, float, cgemm_)
 #endif
 
 // If OpenBLAS with BUILD_BFLOAT16=1 support is available,
@@ -123,10 +122,9 @@ EIGEN_BLAS_GEMM_SPECIALIZATION(scomplex, cf, float, EIGEN_BLAS_SYM(cgemm))
 
 extern "C" {
 // OpenBLAS prototype.
-void EIGEN_BLAS_SYM(sbgemm)(const char* trans_a, const char* trans_b, const EIGEN_BLAS_INT* M, const EIGEN_BLAS_INT* N,
-                            const EIGEN_BLAS_INT* K, const float* alpha, const Eigen::bfloat16* A,
-                            const EIGEN_BLAS_INT* lda, const Eigen::bfloat16* B, const EIGEN_BLAS_INT* ldb,
-                            const float* beta, float* C, const EIGEN_BLAS_INT* ldc);
+void sbgemm_(const char* trans_a, const char* trans_b, const int* M, const int* N, const int* K, const float* alpha,
+             const Eigen::bfloat16* A, const int* lda, const Eigen::bfloat16* B, const int* ldb, const float* beta,
+             float* C, const int* ldc);
 }  // extern "C"
 
 template <typename Index, int LhsStorageOrder, bool ConjugateLhs, int RhsStorageOrder, bool ConjugateRhs>
@@ -168,7 +166,7 @@ struct general_matrix_matrix_product<Index, Eigen::bfloat16, LhsStorageOrder, Co
     ldc = convert_index<BlasIndex>(m);
 
     /* Set a, b, c */
-    EIGEN_IF_CONSTEXPR ((LhsStorageOrder == ColMajor) && (ConjugateLhs)) {
+    if ((LhsStorageOrder == ColMajor) && (ConjugateLhs)) {
       Map<const MatrixXbf16, 0, OuterStride<> > lhs(lhs_, m, k, OuterStride<>(lhsStride));
       a_tmp = lhs.conjugate();
       a = a_tmp.data();
@@ -177,7 +175,7 @@ struct general_matrix_matrix_product<Index, Eigen::bfloat16, LhsStorageOrder, Co
       a = lhs_;
     }
 
-    EIGEN_IF_CONSTEXPR ((RhsStorageOrder == ColMajor) && (ConjugateRhs)) {
+    if ((RhsStorageOrder == ColMajor) && (ConjugateRhs)) {
       Map<const MatrixXbf16, 0, OuterStride<> > rhs(rhs_, k, n, OuterStride<>(rhsStride));
       b_tmp = rhs.conjugate();
       b = b_tmp.data();
@@ -189,9 +187,8 @@ struct general_matrix_matrix_product<Index, Eigen::bfloat16, LhsStorageOrder, Co
     // Evaluate to a temporary intermediate array.
     r_tmp.resize(m, n);
 
-    EIGEN_BLAS_SYM(sbgemm)
-    (&transa, &transb, &m, &n, &k, (const float*)&numext::real_ref(falpha), a, &lda, b, &ldb,
-     (const float*)&numext::real_ref(fbeta), r_tmp.data(), &ldc);
+    sbgemm_(&transa, &transb, &m, &n, &k, (const float*)&numext::real_ref(falpha), a, &lda, b, &ldb,
+            (const float*)&numext::real_ref(fbeta), r_tmp.data(), &ldc);
 
     // Cast to the output.
     Map<MatrixXbf16, 0, OuterStride<> > result(res, m, n, OuterStride<>(resStride));
@@ -199,9 +196,8 @@ struct general_matrix_matrix_product<Index, Eigen::bfloat16, LhsStorageOrder, Co
   }
 };
 
-#endif  // EIGEN_USE_OPENBLAS_BFLOAT16
+#endif  // EIGEN_USE_OPENBLAS_SBGEMM
 
-#undef EIGEN_BLAS_GEMM_SPECIALIZATION
 }  // namespace internal
 
 }  // end namespace Eigen

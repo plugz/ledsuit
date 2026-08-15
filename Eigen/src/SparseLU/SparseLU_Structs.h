@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 /*
  * NOTE: This file comes from a partly modified version of files slu_[s,d,c,z]defs.h
@@ -75,11 +74,11 @@
 namespace Eigen {
 namespace internal {
 
-enum MemType { LUSUP, UCOL, LSUB, USUB };
+enum MemType { LUSUP, UCOL, LSUB, USUB, LLVL, ULVL };
 
 template <typename IndexVector, typename ScalarVector>
 struct LU_GlobalLU_t {
-  using StorageIndex = typename IndexVector::Scalar;
+  typedef typename IndexVector::Scalar StorageIndex;
   IndexVector xsup;    // First supernode column ... xsup(s) points to the beginning of the s-th supernode
   IndexVector supno;   // Supernode number corresponding to this column (column to supernode mapping)
   ScalarVector lusup;  // nonzero values of L ordered by columns

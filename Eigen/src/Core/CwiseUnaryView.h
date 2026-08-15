@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_CWISE_UNARY_VIEW_H
 #define EIGEN_CWISE_UNARY_VIEW_H
@@ -19,17 +18,17 @@ namespace Eigen {
 namespace internal {
 template <typename ViewOp, typename MatrixType, typename StrideType>
 struct traits<CwiseUnaryView<ViewOp, MatrixType, StrideType> > : traits<MatrixType> {
-  using ScalarRef = typename result_of<ViewOp(typename traits<MatrixType>::Scalar&)>::type1;
+  typedef typename result_of<ViewOp(typename traits<MatrixType>::Scalar&)>::type1 ScalarRef;
   static_assert(std::is_reference<ScalarRef>::value, "Views must return a reference type.");
-  using Scalar = remove_cvref_t<ScalarRef>;
-  using MatrixTypeNested = typename MatrixType::Nested;
-  using MatrixTypeNested_ = remove_all_t<MatrixTypeNested>;
+  typedef remove_all_t<ScalarRef> Scalar;
+  typedef typename MatrixType::Nested MatrixTypeNested;
+  typedef remove_all_t<MatrixTypeNested> MatrixTypeNested_;
   enum {
     FlagsLvalueBit = is_lvalue<MatrixType>::value ? LvalueBit : 0,
     Flags =
         traits<MatrixTypeNested_>::Flags &
         (RowMajorBit | FlagsLvalueBit | DirectAccessBit),  // FIXME DirectAccessBit should not be handled by expressions
-    MatrixTypeInnerStride = inner_stride_at_compile_time<MatrixType>::value,
+    MatrixTypeInnerStride = inner_stride_at_compile_time<MatrixType>::ret,
     // need to cast the sizeof's from size_t to int explicitly, otherwise:
     // "error: no integral type can represent all of the enumerator values
     InnerStrideAtCompileTime =
@@ -40,9 +39,9 @@ struct traits<CwiseUnaryView<ViewOp, MatrixType, StrideType> > : traits<MatrixTy
             : int(StrideType::InnerStrideAtCompileTime),
 
     OuterStrideAtCompileTime = StrideType::OuterStrideAtCompileTime == 0
-                                   ? (outer_stride_at_compile_time<MatrixType>::value == Dynamic
+                                   ? (outer_stride_at_compile_time<MatrixType>::ret == Dynamic
                                           ? int(Dynamic)
-                                          : outer_stride_at_compile_time<MatrixType>::value *
+                                          : outer_stride_at_compile_time<MatrixType>::ret *
                                                 int(sizeof(typename traits<MatrixType>::Scalar) / sizeof(Scalar)))
                                    : int(StrideType::OuterStrideAtCompileTime)
   };
@@ -53,15 +52,15 @@ template <typename ViewOp, typename XprType, typename StrideType, typename Stora
           bool Mutable = !std::is_const<XprType>::value>
 class CwiseUnaryViewImpl : public generic_xpr_base<CwiseUnaryView<ViewOp, XprType, StrideType> >::type {
  public:
-  using Base = typename generic_xpr_base<CwiseUnaryView<ViewOp, XprType, StrideType>>::type;
+  typedef typename generic_xpr_base<CwiseUnaryView<ViewOp, XprType, StrideType> >::type Base;
 };
 
 template <typename ViewOp, typename MatrixType, typename StrideType>
 class CwiseUnaryViewImpl<ViewOp, MatrixType, StrideType, Dense, false>
     : public dense_xpr_base<CwiseUnaryView<ViewOp, MatrixType, StrideType> >::type {
  public:
-  using Derived = CwiseUnaryView<ViewOp, MatrixType, StrideType>;
-  using Base = typename dense_xpr_base<CwiseUnaryView<ViewOp, MatrixType, StrideType>>::type;
+  typedef CwiseUnaryView<ViewOp, MatrixType, StrideType> Derived;
+  typedef typename dense_xpr_base<CwiseUnaryView<ViewOp, MatrixType, StrideType> >::type Base;
   EIGEN_DENSE_PUBLIC_INTERFACE(Derived)
   EIGEN_INHERIT_ASSIGNMENT_OPERATORS(CwiseUnaryViewImpl)
 
@@ -96,12 +95,11 @@ template <typename ViewOp, typename MatrixType, typename StrideType>
 class CwiseUnaryViewImpl<ViewOp, MatrixType, StrideType, Dense, true>
     : public CwiseUnaryViewImpl<ViewOp, MatrixType, StrideType, Dense, false> {
  public:
-  using Base = CwiseUnaryViewImpl<ViewOp, MatrixType, StrideType, Dense, false>;
-  using Derived = CwiseUnaryView<ViewOp, MatrixType, StrideType>;
+  typedef CwiseUnaryViewImpl<ViewOp, MatrixType, StrideType, Dense, false> Base;
+  typedef CwiseUnaryView<ViewOp, MatrixType, StrideType> Derived;
   EIGEN_DENSE_PUBLIC_INTERFACE(Derived)
   EIGEN_INHERIT_ASSIGNMENT_OPERATORS(CwiseUnaryViewImpl)
 
-  using Base::coeffRef;
   using Base::data;
   EIGEN_DEVICE_FUNC inline Scalar* data() { return &(this->coeffRef(0)); }
 
@@ -136,30 +134,28 @@ template <typename ViewOp, typename MatrixType, typename StrideType>
 class CwiseUnaryView : public internal::CwiseUnaryViewImpl<ViewOp, MatrixType, StrideType,
                                                            typename internal::traits<MatrixType>::StorageKind> {
  public:
-  using Base = typename internal::CwiseUnaryViewImpl<ViewOp, MatrixType, StrideType,
-                                                     typename internal::traits<MatrixType>::StorageKind>::Base;
+  typedef typename internal::CwiseUnaryViewImpl<ViewOp, MatrixType, StrideType,
+                                                typename internal::traits<MatrixType>::StorageKind>::Base Base;
   EIGEN_GENERIC_PUBLIC_INTERFACE(CwiseUnaryView)
-  using MatrixTypeNested = typename internal::ref_selector<MatrixType>::non_const_type;
-  using NestedExpression = internal::remove_all_t<MatrixType>;
+  typedef typename internal::ref_selector<MatrixType>::non_const_type MatrixTypeNested;
+  typedef internal::remove_all_t<MatrixType> NestedExpression;
 
-  explicit EIGEN_DEVICE_FUNC constexpr inline CwiseUnaryView(MatrixType& mat, const ViewOp& func = ViewOp())
+  explicit EIGEN_DEVICE_FUNC inline CwiseUnaryView(MatrixType& mat, const ViewOp& func = ViewOp())
       : m_matrix(mat), m_functor(func) {}
 
   EIGEN_INHERIT_ASSIGNMENT_OPERATORS(CwiseUnaryView)
 
-  EIGEN_DEVICE_FUNC constexpr Index rows() const noexcept { return m_matrix.rows(); }
-  EIGEN_DEVICE_FUNC constexpr Index cols() const noexcept { return m_matrix.cols(); }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Index rows() const noexcept { return m_matrix.rows(); }
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE constexpr Index cols() const noexcept { return m_matrix.cols(); }
 
   /** \returns the functor representing unary operation */
-  EIGEN_DEVICE_FUNC constexpr const ViewOp& functor() const { return m_functor; }
+  EIGEN_DEVICE_FUNC const ViewOp& functor() const { return m_functor; }
 
   /** \returns the nested expression */
-  EIGEN_DEVICE_FUNC constexpr const internal::remove_all_t<MatrixTypeNested>& nestedExpression() const {
-    return m_matrix;
-  }
+  EIGEN_DEVICE_FUNC const internal::remove_all_t<MatrixTypeNested>& nestedExpression() const { return m_matrix; }
 
   /** \returns the nested expression */
-  EIGEN_DEVICE_FUNC constexpr std::remove_reference_t<MatrixTypeNested>& nestedExpression() { return m_matrix; }
+  EIGEN_DEVICE_FUNC std::remove_reference_t<MatrixTypeNested>& nestedExpression() { return m_matrix; }
 
  protected:
   MatrixTypeNested m_matrix;

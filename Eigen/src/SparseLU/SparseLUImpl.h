@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 #ifndef SPARSELU_IMPL_H
 #define SPARSELU_IMPL_H
 
@@ -23,15 +22,15 @@ namespace internal {
 template <typename Scalar, typename StorageIndex>
 class SparseLUImpl {
  public:
-  using ScalarVector = Matrix<Scalar, Dynamic, 1>;
-  using IndexVector = Matrix<StorageIndex, Dynamic, 1>;
-  using ScalarMatrix = Matrix<Scalar, Dynamic, Dynamic, ColMajor>;
-  using MappedMatrixBlock = Map<ScalarMatrix, 0, OuterStride<>>;
-  using RealScalar = typename ScalarVector::RealScalar;
-  using BlockScalarVector = Ref<Matrix<Scalar, Dynamic, 1>>;
-  using BlockIndexVector = Ref<Matrix<StorageIndex, Dynamic, 1>>;
-  using GlobalLU_t = LU_GlobalLU_t<IndexVector, ScalarVector>;
-  using MatrixType = SparseMatrix<Scalar, ColMajor, StorageIndex>;
+  typedef Matrix<Scalar, Dynamic, 1> ScalarVector;
+  typedef Matrix<StorageIndex, Dynamic, 1> IndexVector;
+  typedef Matrix<Scalar, Dynamic, Dynamic, ColMajor> ScalarMatrix;
+  typedef Map<ScalarMatrix, 0, OuterStride<> > MappedMatrixBlock;
+  typedef typename ScalarVector::RealScalar RealScalar;
+  typedef Ref<Matrix<Scalar, Dynamic, 1> > BlockScalarVector;
+  typedef Ref<Matrix<StorageIndex, Dynamic, 1> > BlockIndexVector;
+  typedef LU_GlobalLU_t<IndexVector, ScalarVector> GlobalLU_t;
+  typedef SparseMatrix<Scalar, ColMajor, StorageIndex> MatrixType;
 
  protected:
   template <typename VectorType>

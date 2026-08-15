@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_SERIALIZER_H
 #define EIGEN_SERIALIZER_H
@@ -29,7 +28,8 @@ class Serializer;
 
 // Specialization for POD types.
 template <typename T>
-class Serializer<T, std::enable_if_t<std::is_trivially_copyable<T>::value && std::is_standard_layout<T>::value>> {
+class Serializer<T,
+                 typename std::enable_if_t<std::is_trivially_copyable<T>::value && std::is_standard_layout<T>::value>> {
  public:
   /**
    * Determines the required size of the serialization buffer for a value.
@@ -46,7 +46,7 @@ class Serializer<T, std::enable_if_t<std::is_trivially_copyable<T>::value && std
    * \param value the value to serialize.
    * \return the next memory address past the end of the serialized data.
    */
-  EIGEN_DEVICE_FUNC uint8_t* serialize(uint8_t* dest, uint8_t* end, const T& value) const {
+  EIGEN_DEVICE_FUNC uint8_t* serialize(uint8_t* dest, uint8_t* end, const T& value) {
     if (EIGEN_PREDICT_FALSE(dest == nullptr)) return nullptr;
     if (EIGEN_PREDICT_FALSE(dest + sizeof(value) > end)) return nullptr;
     EIGEN_USING_STD(memcpy)
@@ -75,7 +75,7 @@ class Serializer<T, std::enable_if_t<std::is_trivially_copyable<T>::value && std
 template <typename Derived>
 class Serializer<DenseBase<Derived>, void> {
  public:
-  using Scalar = typename Derived::Scalar;
+  typedef typename Derived::Scalar Scalar;
 
   struct Header {
     typename Derived::Index rows;
@@ -84,7 +84,7 @@ class Serializer<DenseBase<Derived>, void> {
 
   EIGEN_DEVICE_FUNC size_t size(const Derived& value) const { return sizeof(Header) + sizeof(Scalar) * value.size(); }
 
-  EIGEN_DEVICE_FUNC uint8_t* serialize(uint8_t* dest, uint8_t* end, const Derived& value) const {
+  EIGEN_DEVICE_FUNC uint8_t* serialize(uint8_t* dest, uint8_t* end, const Derived& value) {
     if (EIGEN_PREDICT_FALSE(dest == nullptr)) return nullptr;
     if (EIGEN_PREDICT_FALSE(dest + size(value) > end)) return nullptr;
     const size_t header_bytes = sizeof(Header);
@@ -123,23 +123,46 @@ class Serializer<Array<Scalar, Rows, Cols, Options, MaxRows, MaxCols>>
 
 namespace internal {
 
-template <typename Arg>
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE size_t serialize_size_one(const Arg& arg) {
-  Serializer<std::decay_t<Arg>> serializer;
-  return serializer.size(arg);
-}
+// Recursive serialization implementation helper.
+template <size_t N, typename... Types>
+struct serialize_impl;
 
-template <typename Arg>
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE uint8_t* serialize_one(uint8_t* dest, uint8_t* end, const Arg& arg) {
-  Serializer<std::decay_t<Arg>> serializer;
-  return serializer.serialize(dest, end, arg);
-}
+template <size_t N, typename T1, typename... Ts>
+struct serialize_impl<N, T1, Ts...> {
+  using Serializer = Eigen::Serializer<typename std::decay<T1>::type>;
 
-template <typename Arg>
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const uint8_t* deserialize_one(const uint8_t* src, const uint8_t* end, Arg& arg) {
-  Serializer<std::decay_t<Arg>> serializer;
-  return serializer.deserialize(src, end, arg);
-}
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE size_t serialize_size(const T1& value, const Ts&... args) {
+    Serializer serializer;
+    size_t size = serializer.size(value);
+    return size + serialize_impl<N - 1, Ts...>::serialize_size(args...);
+  }
+
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE uint8_t* serialize(uint8_t* dest, uint8_t* end, const T1& value,
+                                                                  const Ts&... args) {
+    Serializer serializer;
+    dest = serializer.serialize(dest, end, value);
+    return serialize_impl<N - 1, Ts...>::serialize(dest, end, args...);
+  }
+
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const uint8_t* deserialize(const uint8_t* src, const uint8_t* end,
+                                                                          T1& value, Ts&... args) {
+    Serializer serializer;
+    src = serializer.deserialize(src, end, value);
+    return serialize_impl<N - 1, Ts...>::deserialize(src, end, args...);
+  }
+};
+
+// Base case.
+template <>
+struct serialize_impl<0> {
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE size_t serialize_size() { return 0; }
+
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE uint8_t* serialize(uint8_t* dest, uint8_t* /*end*/) { return dest; }
+
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const uint8_t* deserialize(const uint8_t* src, const uint8_t* /*end*/) {
+    return src;
+  }
+};
 
 }  // namespace internal
 
@@ -151,10 +174,7 @@ EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const uint8_t* deserialize_one(const uint8
  */
 template <typename... Args>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE size_t serialize_size(const Args&... args) {
-  size_t size = 0;
-  int unused[] = {0, (size += internal::serialize_size_one(args), 0)...};
-  EIGEN_UNUSED_VARIABLE(unused);
-  return size;
+  return internal::serialize_impl<sizeof...(args), Args...>::serialize_size(args...);
 }
 
 /**
@@ -167,10 +187,7 @@ EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE size_t serialize_size(const Args&... args)
  */
 template <typename... Args>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE uint8_t* serialize(uint8_t* dest, uint8_t* end, const Args&... args) {
-  EIGEN_UNUSED_VARIABLE(end);
-  int unused[] = {0, (dest = internal::serialize_one(dest, end, args), 0)...};
-  EIGEN_UNUSED_VARIABLE(unused);
-  return dest;
+  return internal::serialize_impl<sizeof...(args), Args...>::serialize(dest, end, args...);
 }
 
 /**
@@ -184,10 +201,7 @@ EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE uint8_t* serialize(uint8_t* dest, uint8_t*
 template <typename... Args>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const uint8_t* deserialize(const uint8_t* src, const uint8_t* end,
                                                                  Args&... args) {
-  EIGEN_UNUSED_VARIABLE(end);
-  int unused[] = {0, (src = internal::deserialize_one(src, end, args), 0)...};
-  EIGEN_UNUSED_VARIABLE(unused);
-  return src;
+  return internal::serialize_impl<sizeof...(args), Args...>::deserialize(src, end, args...);
 }
 
 }  // namespace Eigen

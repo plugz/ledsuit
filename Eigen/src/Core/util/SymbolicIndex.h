@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_SYMBOLIC_INDEX_H
 #define EIGEN_SYMBOLIC_INDEX_H
@@ -43,6 +42,8 @@ namespace Eigen {
  */
 namespace symbolic {
 
+template <typename Tag>
+class Symbol;
 template <typename Tag, typename Type>
 class SymbolValue;
 template <typename Arg0>
@@ -174,10 +175,12 @@ class BaseExpr {
   }
 };
 
-// BaseExpr has no conversion ctor, so we only have to check whether T can be statically cast to its base class
-// BaseExpr<T>.
 template <typename T>
-struct is_symbolic : std::is_convertible<T, BaseExpr<T>> {};
+struct is_symbolic {
+  // BaseExpr has no conversion ctor, so we only have to check whether T can be statically cast to its base class
+  // BaseExpr<T>.
+  enum { value = internal::is_convertible<T, BaseExpr<T>>::value };
+};
 
 // A simple wrapper around an integral value to provide the eval method.
 // We could also use a free-function symbolic_eval...
@@ -185,10 +188,10 @@ template <typename IndexType>
 class ValueExpr : BaseExpr<ValueExpr<IndexType>> {
  public:
   constexpr ValueExpr() = default;
-  constexpr ValueExpr(IndexType val) : m_value(val) {}
+  constexpr ValueExpr(IndexType val) : value_(val) {}
   template <typename... Tags, typename... Types>
   constexpr IndexType eval_impl(const SymbolValue<Tags, Types>&...) const {
-    return m_value;
+    return value_;
   }
   template <typename... Tags, typename... Types>
   static constexpr IndexType eval_at_compile_time_impl(const SymbolValue<Tags, Types>&...) {
@@ -196,7 +199,7 @@ class ValueExpr : BaseExpr<ValueExpr<IndexType>> {
   }
 
  protected:
-  IndexType m_value;
+  IndexType value_;
 };
 
 // Specialization for compile-time value,
@@ -229,10 +232,10 @@ class SymbolValue<Tag, Index> : public BaseExpr<SymbolValue<Tag, Index>> {
   constexpr SymbolValue() = default;
 
   /** Default constructor from the value \a val */
-  constexpr SymbolValue(Index val) : m_value(val) {}
+  constexpr SymbolValue(Index val) : value_(val) {}
 
   /** \returns the stored value of the symbol */
-  constexpr Index value() const { return m_value; }
+  constexpr Index value() const { return value_; }
 
   /** \returns the stored value of the symbol at compile time, or Undefined if not known. */
   static constexpr Index value_at_compile_time() { return Index(Undefined); }
@@ -248,7 +251,7 @@ class SymbolValue<Tag, Index> : public BaseExpr<SymbolValue<Tag, Index>> {
   }
 
  protected:
-  Index m_value;
+  Index value_;
 };
 
 template <typename Tag, int N>
@@ -317,7 +320,7 @@ template <typename tag>
 class SymbolExpr : public BaseExpr<SymbolExpr<tag>> {
  public:
   /** Alias to the template parameter \c tag */
-  using Tag = tag;
+  typedef tag Tag;
 
   constexpr SymbolExpr() = default;
 

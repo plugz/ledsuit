@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_SPARSEMATRIXBASE_H
 #define EIGEN_SPARSEMATRIXBASE_H
@@ -30,27 +29,27 @@ namespace Eigen {
 template <typename Derived>
 class SparseMatrixBase : public EigenBase<Derived> {
  public:
-  using Scalar = typename internal::traits<Derived>::Scalar;
+  typedef typename internal::traits<Derived>::Scalar Scalar;
 
-  /** The numeric type of the expression's coefficients, e.g. float, double, int or std::complex<float>, etc.
+  /** The numeric type of the expression' coefficients, e.g. float, double, int or std::complex<float>, etc.
    *
    * It is an alias for the Scalar type */
-  using value_type = Scalar;
+  typedef Scalar value_type;
 
-  using PacketScalar = typename internal::packet_traits<Scalar>::type;
-  using StorageKind = typename internal::traits<Derived>::StorageKind;
+  typedef typename internal::packet_traits<Scalar>::type PacketScalar;
+  typedef typename internal::traits<Derived>::StorageKind StorageKind;
 
   /** The integer type used to \b store indices within a SparseMatrix.
-   * For a \c SparseMatrix<Scalar,Options,IndexType> it is an alias of the third template parameter \c IndexType. */
-  using StorageIndex = typename internal::traits<Derived>::StorageIndex;
+   * For a \c SparseMatrix<Scalar,Options,IndexType> it an alias of the third template parameter \c IndexType. */
+  typedef typename internal::traits<Derived>::StorageIndex StorageIndex;
 
-  using PacketReturnType = std::conditional_t<internal::is_arithmetic<PacketScalar>::value, PacketScalar,
-                                              internal::add_const_on_value_type_t<PacketScalar>>;
+  typedef typename internal::add_const_on_value_type_if_arithmetic<typename internal::packet_traits<Scalar>::type>::type
+      PacketReturnType;
 
-  using StorageBaseType = SparseMatrixBase;
+  typedef SparseMatrixBase StorageBaseType;
 
-  using IndexVector = Matrix<StorageIndex, Dynamic, 1>;
-  using ScalarVector = Matrix<Scalar, Dynamic, 1>;
+  typedef Matrix<StorageIndex, Dynamic, 1> IndexVector;
+  typedef Matrix<Scalar, Dynamic, 1> ScalarVector;
 
   template <typename OtherDerived>
   Derived& operator=(const EigenBase<OtherDerived>& other);
@@ -69,7 +68,7 @@ class SparseMatrixBase : public EigenBase<Derived> {
      * it is set to the \a Dynamic constant.
      * \sa MatrixBase::rows(), MatrixBase::cols(), RowsAtCompileTime, SizeAtCompileTime */
 
-    SizeAtCompileTime = (internal::size_of_xpr_at_compile_time<Derived>::value),
+    SizeAtCompileTime = (internal::size_of_xpr_at_compile_time<Derived>::ret),
     /**< This is equal to the number of coefficients, i.e. the number of
      * rows times the number of columns, or to \a Dynamic if this is not
      * known at compile-time. \sa RowsAtCompileTime, ColsAtCompileTime */
@@ -109,15 +108,15 @@ class SparseMatrixBase : public EigenBase<Derived> {
   };
 
   /** \internal the return type of MatrixBase::adjoint() */
-  using AdjointReturnType =
-      std::conditional_t<NumTraits<Scalar>::IsComplex,
-                         CwiseUnaryOp<internal::scalar_conjugate_op<Scalar>, Eigen::Transpose<const Derived>>,
-                         Transpose<const Derived>>;
-  using TransposeReturnType = Transpose<Derived>;
-  using ConstTransposeReturnType = Transpose<const Derived>;
+  typedef std::conditional_t<NumTraits<Scalar>::IsComplex,
+                             CwiseUnaryOp<internal::scalar_conjugate_op<Scalar>, Eigen::Transpose<const Derived> >,
+                             Transpose<const Derived> >
+      AdjointReturnType;
+  typedef Transpose<Derived> TransposeReturnType;
+  typedef Transpose<const Derived> ConstTransposeReturnType;
 
-  // FIXME: storage order may not match evaluator storage order.
-  using PlainObject = SparseMatrix<Scalar, Flags & RowMajorBit ? RowMajor : ColMajor, StorageIndex>;
+  // FIXME storage order do not match evaluator storage order
+  typedef SparseMatrix<Scalar, Flags & RowMajorBit ? RowMajor : ColMajor, StorageIndex> PlainObject;
 
   /** This is the "real scalar" type; if the \a Scalar type is already real numbers
    * (e.g. int, float or double) then \a RealScalar is just the same as \a Scalar. If
@@ -125,27 +124,28 @@ class SparseMatrixBase : public EigenBase<Derived> {
    *
    * \sa class NumTraits
    */
-  using RealScalar = typename NumTraits<Scalar>::Real;
+  typedef typename NumTraits<Scalar>::Real RealScalar;
 
 #ifndef EIGEN_PARSED_BY_DOXYGEN
   /** \internal the return type of coeff()
    */
-  using CoeffReturnType = std::conditional_t<HasDirectAccess_, const Scalar&, Scalar>;
+  typedef std::conditional_t<HasDirectAccess_, const Scalar&, Scalar> CoeffReturnType;
 
   /** \internal Represents a matrix with all coefficients equal to one another*/
-  using ConstantReturnType = CwiseNullaryOp<internal::scalar_constant_op<Scalar>, Matrix<Scalar, Dynamic, Dynamic>>;
+  typedef CwiseNullaryOp<internal::scalar_constant_op<Scalar>, Matrix<Scalar, Dynamic, Dynamic> > ConstantReturnType;
 
   /** type of the equivalent dense matrix */
-  using DenseMatrixType = Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime>;
+  typedef Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime> DenseMatrixType;
   /** type of the equivalent square matrix */
-  using SquareMatrixType = Matrix<Scalar, internal::max_size_prefer_dynamic(RowsAtCompileTime, ColsAtCompileTime),
-                                  internal::max_size_prefer_dynamic(RowsAtCompileTime, ColsAtCompileTime)>;
+  typedef Matrix<Scalar, internal::max_size_prefer_dynamic(RowsAtCompileTime, ColsAtCompileTime),
+                 internal::max_size_prefer_dynamic(RowsAtCompileTime, ColsAtCompileTime)>
+      SquareMatrixType;
 
   inline const Derived& derived() const { return *static_cast<const Derived*>(this); }
   inline Derived& derived() { return *static_cast<Derived*>(this); }
   inline Derived& const_cast_derived() const { return *static_cast<Derived*>(const_cast<SparseMatrixBase*>(this)); }
 
-  using Base = EigenBase<Derived>;
+  typedef EigenBase<Derived> Base;
 
 #endif  // not EIGEN_PARSED_BY_DOXYGEN
 
@@ -191,10 +191,10 @@ class SparseMatrixBase : public EigenBase<Derived> {
    * \sa rows(), cols(), IsVectorAtCompileTime. */
   inline bool isVector() const { return rows() == 1 || cols() == 1; }
   /** \returns the size of the storage major dimension,
-   * i.e., the number of columns for a column major matrix, and the number of rows otherwise */
+   * i.e., the number of columns for a columns major matrix, and the number of rows otherwise */
   Index outerSize() const { return (int(Flags) & RowMajorBit) ? this->rows() : this->cols(); }
   /** \returns the size of the inner dimension according to the storage order,
-   * i.e., the number of rows for a column major matrix, and the number of cols otherwise */
+   * i.e., the number of rows for a columns major matrix, and the number of cols otherwise */
   Index innerSize() const { return (int(Flags) & RowMajorBit) ? this->cols() : this->rows(); }
 
   bool isRValue() const { return m_isRValue; }
@@ -203,7 +203,7 @@ class SparseMatrixBase : public EigenBase<Derived> {
     return derived();
   }
 
-  SparseMatrixBase() : m_isRValue(false) { /* TODO: validate traits flags. */
+  SparseMatrixBase() : m_isRValue(false) { /* TODO check flags */
   }
 
   template <typename OtherDerived>
@@ -225,9 +225,9 @@ class SparseMatrixBase : public EigenBase<Derived> {
 #ifndef EIGEN_NO_IO
   friend std::ostream& operator<<(std::ostream& s, const SparseMatrixBase& m) {
     using Nested = typename Derived::Nested;
-    using NestedCleaned = internal::remove_all_t<Nested>;
+    using NestedCleaned = typename internal::remove_all<Nested>::type;
 
-    EIGEN_IF_CONSTEXPR (Flags & RowMajorBit) {
+    if (Flags & RowMajorBit) {
       Nested nm(m.derived());
       internal::evaluator<NestedCleaned> thisEval(nm);
 
@@ -304,7 +304,7 @@ class SparseMatrixBase : public EigenBase<Derived> {
         }
       } else {
         SparseMatrix<Scalar, RowMajorBit, StorageIndex> trans = m;
-        s << static_cast<const SparseMatrixBase<SparseMatrix<Scalar, RowMajorBit, StorageIndex>>&>(trans);
+        s << static_cast<const SparseMatrixBase<SparseMatrix<Scalar, RowMajorBit, StorageIndex> >&>(trans);
       }
     }
     return s;
@@ -331,10 +331,11 @@ class SparseMatrixBase : public EigenBase<Derived> {
 
   template <typename OtherDerived>
   struct CwiseProductDenseReturnType {
-    using Type = CwiseBinaryOp<
+    typedef CwiseBinaryOp<
         internal::scalar_product_op<typename ScalarBinaryOpTraits<
             typename internal::traits<Derived>::Scalar, typename internal::traits<OtherDerived>::Scalar>::ReturnType>,
-        const Derived, const OtherDerived>;
+        const Derived, const OtherDerived>
+        Type;
   };
 
   template <typename OtherDerived>
@@ -385,11 +386,11 @@ class SparseMatrixBase : public EigenBase<Derived> {
 
   template <unsigned int UpLo>
   struct SelfAdjointViewReturnType {
-    using Type = SparseSelfAdjointView<Derived, UpLo>;
+    typedef SparseSelfAdjointView<Derived, UpLo> Type;
   };
   template <unsigned int UpLo>
   struct ConstSelfAdjointViewReturnType {
-    using Type = const SparseSelfAdjointView<const Derived, UpLo>;
+    typedef const SparseSelfAdjointView<const Derived, UpLo> Type;
   };
 
   template <unsigned int UpLo>

@@ -32,7 +32,6 @@
 // See LEGAL.TXT for all the legal information.
 //
 // TODO: Unify implementations of different data types (i.e. float and double).
-// SPDX-License-Identifier: MPL-2.0
 #ifndef EIGEN_INVERSE_SIZE_4_H
 #define EIGEN_INVERSE_SIZE_4_H
 
@@ -55,8 +54,9 @@ struct compute_inverse_size4<Architecture::Target, float, MatrixType, ResultType
     ResultAlignment = traits<ResultType>::Alignment,
     StorageOrdersMatch = (MatrixType::Flags & RowMajorBit) == (ResultType::Flags & RowMajorBit)
   };
-  using ActualMatrixType =
-      std::conditional_t<(MatrixType::Flags & LinearAccessBit), const MatrixType &, typename MatrixType::PlainObject>;
+  typedef std::conditional_t<(MatrixType::Flags & LinearAccessBit), MatrixType const &,
+                             typename MatrixType::PlainObject>
+      ActualMatrixType;
 
   static void run(const MatrixType &mat, ResultType &result) {
     ActualMatrixType matrix(mat);
@@ -73,7 +73,7 @@ struct compute_inverse_size4<Architecture::Target, float, MatrixType, ResultType
     //          [C, D]]
     Packet4f A, B, C, D;
 
-    EIGEN_IF_CONSTEXPR (!StorageOrdersMatch) {
+    if (!StorageOrdersMatch) {
       A = vec4f_unpacklo(L1, L2);
       B = vec4f_unpacklo(L3, L4);
       C = vec4f_unpackhi(L1, L2);
@@ -147,10 +147,7 @@ struct compute_inverse_size4<Architecture::Target, float, MatrixType, ResultType
     iC = psub(iC, pmul(vec4f_swizzle2(A, A, 1, 0, 3, 2), vec4f_swizzle2(DC, DC, 2, 1, 2, 1)));
     iC = psub(pmul(B, vec4f_duplane(dC, 0)), iC);
 
-    // Built from integer bits: a -0.0f literal may be replaced by +0.0f under fast-math.
-    const float neg_zero = numext::bit_cast<float>(0x80000000u);
-    EIGEN_ALIGN_TO_BOUNDARY(unpacket_traits<Packet4f>::alignment)
-    const float sign_mask[4] = {0.0f, neg_zero, neg_zero, 0.0f};
+    EIGEN_ALIGN_MAX const float sign_mask[4] = {0.0f, -0.0f, -0.0f, 0.0f};
     const Packet4f p4f_sign_PNNP = pload<Packet4f>(sign_mask);
     rd = pxor(rd, p4f_sign_PNNP);
     iA = pmul(iA, rd);
@@ -168,7 +165,7 @@ struct compute_inverse_size4<Architecture::Target, float, MatrixType, ResultType
   }
 };
 
-#if !defined(EIGEN_VECTORIZE_NEON) || EIGEN_ARCH_ARM64
+#if !(defined EIGEN_VECTORIZE_NEON && !(EIGEN_ARCH_ARM64 && !EIGEN_APPLE_DOUBLE_NEON_BUG))
 // same algorithm as above, except that each operand is split into
 // halves for two registers to hold.
 template <typename MatrixType, typename ResultType>
@@ -178,8 +175,9 @@ struct compute_inverse_size4<Architecture::Target, double, MatrixType, ResultTyp
     ResultAlignment = traits<ResultType>::Alignment,
     StorageOrdersMatch = (MatrixType::Flags & RowMajorBit) == (ResultType::Flags & RowMajorBit)
   };
-  using ActualMatrixType =
-      std::conditional_t<(MatrixType::Flags & LinearAccessBit), const MatrixType &, typename MatrixType::PlainObject>;
+  typedef std::conditional_t<(MatrixType::Flags & LinearAccessBit), MatrixType const &,
+                             typename MatrixType::PlainObject>
+      ActualMatrixType;
 
   static void run(const MatrixType &mat, ResultType &result) {
     ActualMatrixType matrix(mat);
@@ -195,7 +193,7 @@ struct compute_inverse_size4<Architecture::Target, double, MatrixType, ResultTyp
 
     const double *data = matrix.data();
     const Index stride = matrix.innerStride();
-    EIGEN_IF_CONSTEXPR (StorageOrdersMatch) {
+    if (StorageOrdersMatch) {
       A1 = ploadt<Packet2d, MatrixAlignment>(data + stride * 0);
       B1 = ploadt<Packet2d, MatrixAlignment>(data + stride * 2);
       A2 = ploadt<Packet2d, MatrixAlignment>(data + stride * 4);
@@ -325,10 +323,8 @@ struct compute_inverse_size4<Architecture::Target, double, MatrixType, ResultTyp
     iC1 = psub(pmul(B1, dC), iC1);
     iC2 = psub(pmul(B2, dC), iC2);
 
-    // Built from integer bits: a -0.0 literal may be replaced by +0.0 under fast-math.
-    const double neg_zero = numext::bit_cast<double>(0x8000000000000000ull);
-    EIGEN_ALIGN_TO_BOUNDARY(unpacket_traits<Packet2d>::alignment) const double sign_mask1[2] = {0.0, neg_zero};
-    EIGEN_ALIGN_TO_BOUNDARY(unpacket_traits<Packet2d>::alignment) const double sign_mask2[2] = {neg_zero, 0.0};
+    EIGEN_ALIGN_MAX const double sign_mask1[2] = {0.0, -0.0};
+    EIGEN_ALIGN_MAX const double sign_mask2[2] = {-0.0, 0.0};
     const Packet2d sign_PN = pload<Packet2d>(sign_mask1);
     const Packet2d sign_NP = pload<Packet2d>(sign_mask2);
     d1 = pxor(rd, sign_PN);

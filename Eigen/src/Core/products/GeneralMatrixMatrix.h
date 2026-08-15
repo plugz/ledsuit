@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_GENERAL_MATRIX_MATRIX_H
 #define EIGEN_GENERAL_MATRIX_MATRIX_H
@@ -21,87 +20,14 @@ namespace internal {
 template <typename LhsScalar_, typename RhsScalar_>
 class level3_blocking;
 
-// LHS-first loop order: mc -> kc -> nc. This is Eigen's usual sequential
-// schedule, with a fast path that can pack RHS once for tall skinny blocking.
-struct gemm_pack_lhs_first_loop_policy {
-  template <typename Index, typename LhsScalar, typename RhsScalar, typename ResScalar, typename LhsMapper,
-            typename RhsMapper, typename ResMapper, typename PackLhs, typename PackRhs, typename Gebp>
-  static EIGEN_STRONG_INLINE void run(Index rows, Index cols, Index depth, Index kc, Index mc, Index nc,
-                                      const LhsMapper& lhs, const RhsMapper& rhs, ResMapper& res, PackLhs& pack_lhs,
-                                      PackRhs& pack_rhs, Gebp& gebp, LhsScalar* blockA, RhsScalar* blockB,
-                                      ResScalar alpha) {
-    const bool pack_rhs_once = mc != rows && kc == depth && nc == cols;
-
-    // For each horizontal panel of the rhs, and corresponding panel of the lhs...
-    for (Index i2 = 0; i2 < rows; i2 += mc) {
-      const Index actual_mc = (std::min)(i2 + mc, rows) - i2;
-
-      for (Index k2 = 0; k2 < depth; k2 += kc) {
-        const Index actual_kc = (std::min)(k2 + kc, depth) - k2;
-
-        // OK, here we have selected one horizontal panel of rhs and one vertical panel of lhs.
-        // => Pack lhs's panel into a sequential chunk of memory (L2/L3 caching)
-        // Note that this panel will be read as many times as the number of blocks in the rhs's
-        // horizontal panel which is, in practice, a very low number.
-        pack_lhs(blockA, lhs.getSubMapper(i2, k2), actual_kc, actual_mc);
-
-        // For each kc x nc block of the rhs's horizontal panel...
-        for (Index j2 = 0; j2 < cols; j2 += nc) {
-          const Index actual_nc = (std::min)(j2 + nc, cols) - j2;
-
-          // We pack the rhs's block into a sequential chunk of memory (L2 caching)
-          // Note that this block will be read a very high number of times, which is equal to the number of
-          // micro horizontal panel of the large rhs's panel (e.g., rows/12 times).
-          if ((!pack_rhs_once) || i2 == 0) pack_rhs(blockB, rhs.getSubMapper(k2, j2), actual_kc, actual_nc);
-
-          // Everything is packed, we can now call the panel * block kernel:
-          gebp(res.getSubMapper(i2, j2), blockA, blockB, actual_mc, actual_kc, actual_nc, alpha);
-        }
-      }
-    }
-  }
-};
-
-// RHS-first loop order: nc -> kc -> mc. Used by SME to stream ColMajor result
-// stores through adjacent row panels.
-struct gemm_pack_rhs_first_loop_policy {
-  template <typename Index, typename LhsScalar, typename RhsScalar, typename ResScalar, typename LhsMapper,
-            typename RhsMapper, typename ResMapper, typename PackLhs, typename PackRhs, typename Gebp>
-  static EIGEN_STRONG_INLINE void run(Index rows, Index cols, Index depth, Index kc, Index mc, Index nc,
-                                      const LhsMapper& lhs, const RhsMapper& rhs, ResMapper& res, PackLhs& pack_lhs,
-                                      PackRhs& pack_rhs, Gebp& gebp, LhsScalar* blockA, RhsScalar* blockB,
-                                      ResScalar alpha) {
-    // Mirror of pack_rhs_once: reuse one full LHS panel across column blocks.
-    const bool pack_lhs_once = nc != cols && kc == depth && mc == rows;
-
-    for (Index j2 = 0; j2 < cols; j2 += nc) {
-      const Index actual_nc = (std::min)(j2 + nc, cols) - j2;
-
-      for (Index k2 = 0; k2 < depth; k2 += kc) {
-        const Index actual_kc = (std::min)(k2 + kc, depth) - k2;
-
-        // Pack one nc-strip of RHS and reuse it across all row panels.
-        pack_rhs(blockB, rhs.getSubMapper(k2, j2), actual_kc, actual_nc);
-
-        for (Index i2 = 0; i2 < rows; i2 += mc) {
-          const Index actual_mc = (std::min)(i2 + mc, rows) - i2;
-
-          if ((!pack_lhs_once) || j2 == 0) pack_lhs(blockA, lhs.getSubMapper(i2, k2), actual_kc, actual_mc);
-          gebp(res.getSubMapper(i2, j2), blockA, blockB, actual_mc, actual_kc, actual_nc, alpha);
-        }
-      }
-    }
-  }
-};
-
 /* Specialization for a row-major destination matrix => simple transposition of the product */
 template <typename Index, typename LhsScalar, int LhsStorageOrder, bool ConjugateLhs, typename RhsScalar,
           int RhsStorageOrder, bool ConjugateRhs, int ResInnerStride>
 struct general_matrix_matrix_product<Index, LhsScalar, LhsStorageOrder, ConjugateLhs, RhsScalar, RhsStorageOrder,
                                      ConjugateRhs, RowMajor, ResInnerStride> {
-  using Traits = gebp_traits<RhsScalar, LhsScalar>;
+  typedef gebp_traits<RhsScalar, LhsScalar> Traits;
 
-  using ResScalar = typename ScalarBinaryOpTraits<LhsScalar, RhsScalar>::ReturnType;
+  typedef typename ScalarBinaryOpTraits<LhsScalar, RhsScalar>::ReturnType ResScalar;
   static EIGEN_STRONG_INLINE void run(Index rows, Index cols, Index depth, const LhsScalar* lhs, Index lhsStride,
                                       const RhsScalar* rhs, Index rhsStride, ResScalar* res, Index resIncr,
                                       Index resStride, ResScalar alpha, level3_blocking<RhsScalar, LhsScalar>& blocking,
@@ -120,18 +46,15 @@ template <typename Index, typename LhsScalar, int LhsStorageOrder, bool Conjugat
           int RhsStorageOrder, bool ConjugateRhs, int ResInnerStride>
 struct general_matrix_matrix_product<Index, LhsScalar, LhsStorageOrder, ConjugateLhs, RhsScalar, RhsStorageOrder,
                                      ConjugateRhs, ColMajor, ResInnerStride> {
-  using Traits = gebp_traits<LhsScalar, RhsScalar>;
+  typedef gebp_traits<LhsScalar, RhsScalar> Traits;
 
-  using ResScalar = typename ScalarBinaryOpTraits<LhsScalar, RhsScalar>::ReturnType;
+  typedef typename ScalarBinaryOpTraits<LhsScalar, RhsScalar>::ReturnType ResScalar;
   static void run(Index rows, Index cols, Index depth, const LhsScalar* lhs_, Index lhsStride, const RhsScalar* rhs_,
                   Index rhsStride, ResScalar* res_, Index resIncr, Index resStride, ResScalar alpha,
                   level3_blocking<LhsScalar, RhsScalar>& blocking, GemmParallelInfo<Index>* info = 0) {
-    // BLAS contract: if alpha == 0, the result is unchanged (and lhs/rhs need not be read).
-    if (numext::is_exactly_zero(alpha)) return;
-
-    using LhsMapper = const_blas_data_mapper<LhsScalar, Index, LhsStorageOrder>;
-    using RhsMapper = const_blas_data_mapper<RhsScalar, Index, RhsStorageOrder>;
-    using ResMapper = blas_data_mapper<typename Traits::ResScalar, Index, ColMajor, Unaligned, ResInnerStride>;
+    typedef const_blas_data_mapper<LhsScalar, Index, LhsStorageOrder> LhsMapper;
+    typedef const_blas_data_mapper<RhsScalar, Index, RhsStorageOrder> RhsMapper;
+    typedef blas_data_mapper<typename Traits::ResScalar, Index, ColMajor, Unaligned, ResInnerStride> ResMapper;
     LhsMapper lhs(lhs_, lhsStride);
     RhsMapper rhs(rhs_, rhsStride);
     ResMapper res(res_, resStride, resIncr);
@@ -217,7 +140,7 @@ struct general_matrix_matrix_product<Index, LhsScalar, LhsStorageOrder, Conjugat
         for (Index i = 0; i < threads; ++i) info->task_info[i].users -= 1;
       }
     } else
-#endif  // !defined(EIGEN_USE_BLAS) && (defined(EIGEN_HAS_OPENMP) || defined(EIGEN_GEMM_THREADPOOL))
+#endif  // defined(EIGEN_HAS_OPENMP) || defined(EIGEN_GEMM_THREADPOOL)
     {
       EIGEN_UNUSED_VARIABLE(info);
 
@@ -228,17 +151,35 @@ struct general_matrix_matrix_product<Index, LhsScalar, LhsStorageOrder, Conjugat
       ei_declare_aligned_stack_constructed_variable(LhsScalar, blockA, sizeA, blocking.blockA());
       ei_declare_aligned_stack_constructed_variable(RhsScalar, blockB, sizeB, blocking.blockB());
 
-      // SME uses RHS-first order so consecutive gebp calls stream through
-      // adjacent row panels of a ColMajor result. Other kernels keep Eigen's
-      // default LHS-first order.
-#ifdef EIGEN_VECTORIZE_SME
-      using SequentialGemmLoop = gemm_pack_rhs_first_loop_policy;
-#else
-      using SequentialGemmLoop = gemm_pack_lhs_first_loop_policy;
-#endif
+      const bool pack_rhs_once = mc != rows && kc == depth && nc == cols;
 
-      SequentialGemmLoop::run(rows, cols, depth, kc, mc, nc, lhs, rhs, res, pack_lhs, pack_rhs, gebp, blockA, blockB,
-                              alpha);
+      // For each horizontal panel of the rhs, and corresponding panel of the lhs...
+      for (Index i2 = 0; i2 < rows; i2 += mc) {
+        const Index actual_mc = (std::min)(i2 + mc, rows) - i2;
+
+        for (Index k2 = 0; k2 < depth; k2 += kc) {
+          const Index actual_kc = (std::min)(k2 + kc, depth) - k2;
+
+          // OK, here we have selected one horizontal panel of rhs and one vertical panel of lhs.
+          // => Pack lhs's panel into a sequential chunk of memory (L2/L3 caching)
+          // Note that this panel will be read as many times as the number of blocks in the rhs's
+          // horizontal panel which is, in practice, a very low number.
+          pack_lhs(blockA, lhs.getSubMapper(i2, k2), actual_kc, actual_mc);
+
+          // For each kc x nc block of the rhs's horizontal panel...
+          for (Index j2 = 0; j2 < cols; j2 += nc) {
+            const Index actual_nc = (std::min)(j2 + nc, cols) - j2;
+
+            // We pack the rhs's block into a sequential chunk of memory (L2 caching)
+            // Note that this block will be read a very high number of times, which is equal to the number of
+            // micro horizontal panel of the large rhs's panel (e.g., rows/12 times).
+            if ((!pack_rhs_once) || i2 == 0) pack_rhs(blockB, rhs.getSubMapper(k2, j2), actual_kc, actual_nc);
+
+            // Everything is packed, we can now call the panel * block kernel:
+            gebp(res.getSubMapper(i2, j2), blockA, blockB, actual_mc, actual_kc, actual_nc, alpha);
+          }
+        }
+      }
     }
   }
 };
@@ -267,7 +208,7 @@ struct gemm_functor {
               m_actualAlpha, m_blocking, info);
   }
 
-  using Traits = typename Gemm::Traits;
+  typedef typename Gemm::Traits Traits;
 
  protected:
   const Lhs& m_lhs;
@@ -283,19 +224,19 @@ class gemm_blocking_space;
 
 template <typename LhsScalar_, typename RhsScalar_>
 class level3_blocking {
-  using LhsScalar = LhsScalar_;
-  using RhsScalar = RhsScalar_;
+  typedef LhsScalar_ LhsScalar;
+  typedef RhsScalar_ RhsScalar;
 
  protected:
-  LhsScalar* m_blockA = nullptr;
-  RhsScalar* m_blockB = nullptr;
+  LhsScalar* m_blockA;
+  RhsScalar* m_blockB;
 
-  Index m_mc = 0;
-  Index m_nc = 0;
-  Index m_kc = 0;
+  Index m_mc;
+  Index m_nc;
+  Index m_kc;
 
  public:
-  level3_blocking() = default;
+  level3_blocking() : m_blockA(0), m_blockB(0), m_mc(0), m_nc(0), m_kc(0) {}
 
   inline Index mc() const { return m_mc; }
   inline Index nc() const { return m_nc; }
@@ -316,8 +257,8 @@ class gemm_blocking_space<StorageOrder, LhsScalar_, RhsScalar_, MaxRows, MaxCols
     ActualRows = Transpose ? MaxCols : MaxRows,
     ActualCols = Transpose ? MaxRows : MaxCols
   };
-  using LhsScalar = std::conditional_t<Transpose, RhsScalar_, LhsScalar_>;
-  using RhsScalar = std::conditional_t<Transpose, LhsScalar_, RhsScalar_>;
+  typedef std::conditional_t<Transpose, RhsScalar_, LhsScalar_> LhsScalar;
+  typedef std::conditional_t<Transpose, LhsScalar_, RhsScalar_> RhsScalar;
   enum { SizeA = ActualRows * MaxDepth, SizeB = ActualCols * MaxDepth };
 
 #if EIGEN_MAX_STATIC_ALIGN_BYTES >= EIGEN_DEFAULT_ALIGN_BYTES
@@ -358,8 +299,8 @@ class gemm_blocking_space<StorageOrder, LhsScalar_, RhsScalar_, MaxRows, MaxCols
     : public level3_blocking<std::conditional_t<StorageOrder == RowMajor, RhsScalar_, LhsScalar_>,
                              std::conditional_t<StorageOrder == RowMajor, LhsScalar_, RhsScalar_>> {
   enum { Transpose = StorageOrder == RowMajor };
-  using LhsScalar = std::conditional_t<Transpose, RhsScalar_, LhsScalar_>;
-  using RhsScalar = std::conditional_t<Transpose, LhsScalar_, RhsScalar_>;
+  typedef std::conditional_t<Transpose, RhsScalar_, LhsScalar_> LhsScalar;
+  typedef std::conditional_t<Transpose, LhsScalar_, RhsScalar_> RhsScalar;
 
   Index m_sizeA;
   Index m_sizeB;
@@ -420,33 +361,31 @@ namespace internal {
 template <typename Lhs, typename Rhs>
 struct generic_product_impl<Lhs, Rhs, DenseShape, DenseShape, GemmProduct>
     : generic_product_impl_base<Lhs, Rhs, generic_product_impl<Lhs, Rhs, DenseShape, DenseShape, GemmProduct>> {
-  using Scalar = typename Product<Lhs, Rhs>::Scalar;
-  using LhsScalar = typename Lhs::Scalar;
-  using RhsScalar = typename Rhs::Scalar;
+  typedef typename Product<Lhs, Rhs>::Scalar Scalar;
+  typedef typename Lhs::Scalar LhsScalar;
+  typedef typename Rhs::Scalar RhsScalar;
 
-  using LhsBlasTraits = internal::blas_traits<Lhs>;
-  using ActualLhsType = typename LhsBlasTraits::DirectLinearAccessType;
-  using ActualLhsTypeCleaned = internal::remove_all_t<ActualLhsType>;
+  typedef internal::blas_traits<Lhs> LhsBlasTraits;
+  typedef typename LhsBlasTraits::DirectLinearAccessType ActualLhsType;
+  typedef internal::remove_all_t<ActualLhsType> ActualLhsTypeCleaned;
 
-  using RhsBlasTraits = internal::blas_traits<Rhs>;
-  using ActualRhsType = typename RhsBlasTraits::DirectLinearAccessType;
-  using ActualRhsTypeCleaned = internal::remove_all_t<ActualRhsType>;
+  typedef internal::blas_traits<Rhs> RhsBlasTraits;
+  typedef typename RhsBlasTraits::DirectLinearAccessType ActualRhsType;
+  typedef internal::remove_all_t<ActualRhsType> ActualRhsTypeCleaned;
 
   enum { MaxDepthAtCompileTime = min_size_prefer_fixed(Lhs::MaxColsAtCompileTime, Rhs::MaxRowsAtCompileTime) };
 
-  using lazyproduct = generic_product_impl<Lhs, Rhs, DenseShape, DenseShape, CoeffBasedProductMode>;
-
-  // The runtime-size heuristic comes from bug 404 and was tuned with a
-  // helper program on Haswell. The rhs.rows() > 0 guard preserves the
-  // historical empty-product path through scaleAndAddTo().
-  template <typename Dst>
-  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE bool useRuntimeCoeffBasedProduct(const Dst& dst, const Rhs& rhs) {
-    return rhs.rows() > 0 && (rhs.rows() + dst.rows() + dst.cols()) < EIGEN_GEMM_TO_COEFFBASED_THRESHOLD;
-  }
+  typedef generic_product_impl<Lhs, Rhs, DenseShape, DenseShape, CoeffBasedProductMode> lazyproduct;
 
   template <typename Dst>
   static void evalTo(Dst& dst, const Lhs& lhs, const Rhs& rhs) {
-    if (useRuntimeCoeffBasedProduct(dst, rhs))
+    // See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=404 for a discussion and helper program
+    // to determine the following heuristic.
+    // EIGEN_GEMM_TO_COEFFBASED_THRESHOLD is typically defined to 20 in GeneralProduct.h,
+    // unless it has been specialized by the user or for a given architecture.
+    // Note that the condition rhs.rows()>0 was required because lazy product is (was?) not happy with empty inputs.
+    // I'm not sure it is still required.
+    if ((rhs.rows() + dst.rows() + dst.cols()) < EIGEN_GEMM_TO_COEFFBASED_THRESHOLD && rhs.rows() > 0)
       lazyproduct::eval_dynamic(dst, lhs, rhs, internal::assign_op<typename Dst::Scalar, Scalar>());
     else {
       dst.setZero();
@@ -456,7 +395,7 @@ struct generic_product_impl<Lhs, Rhs, DenseShape, DenseShape, GemmProduct>
 
   template <typename Dst>
   static void addTo(Dst& dst, const Lhs& lhs, const Rhs& rhs) {
-    if (useRuntimeCoeffBasedProduct(dst, rhs))
+    if ((rhs.rows() + dst.rows() + dst.cols()) < EIGEN_GEMM_TO_COEFFBASED_THRESHOLD && rhs.rows() > 0)
       lazyproduct::eval_dynamic(dst, lhs, rhs, internal::add_assign_op<typename Dst::Scalar, Scalar>());
     else
       scaleAndAddTo(dst, lhs, rhs, Scalar(1));
@@ -464,7 +403,7 @@ struct generic_product_impl<Lhs, Rhs, DenseShape, DenseShape, GemmProduct>
 
   template <typename Dst>
   static void subTo(Dst& dst, const Lhs& lhs, const Rhs& rhs) {
-    if (useRuntimeCoeffBasedProduct(dst, rhs))
+    if ((rhs.rows() + dst.rows() + dst.cols()) < EIGEN_GEMM_TO_COEFFBASED_THRESHOLD && rhs.rows() > 0)
       lazyproduct::eval_dynamic(dst, lhs, rhs, internal::sub_assign_op<typename Dst::Scalar, Scalar>());
     else
       scaleAndAddTo(dst, lhs, rhs, Scalar(-1));
@@ -492,18 +431,19 @@ struct generic_product_impl<Lhs, Rhs, DenseShape, DenseShape, GemmProduct>
 
     Scalar actualAlpha = combine_scalar_factors(alpha, a_lhs, a_rhs);
 
-    using BlockingType =
-        internal::gemm_blocking_space<(Dest::Flags & RowMajorBit) ? RowMajor : ColMajor, LhsScalar, RhsScalar,
-                                      Dest::MaxRowsAtCompileTime, Dest::MaxColsAtCompileTime, MaxDepthAtCompileTime>;
+    typedef internal::gemm_blocking_space<(Dest::Flags & RowMajorBit) ? RowMajor : ColMajor, LhsScalar, RhsScalar,
+                                          Dest::MaxRowsAtCompileTime, Dest::MaxColsAtCompileTime, MaxDepthAtCompileTime>
+        BlockingType;
 
-    using GemmFunctor = internal::gemm_functor<
+    typedef internal::gemm_functor<
         Scalar, Index,
         internal::general_matrix_matrix_product<
             Index, LhsScalar, (ActualLhsTypeCleaned::Flags & RowMajorBit) ? RowMajor : ColMajor,
             bool(LhsBlasTraits::NeedToConjugate), RhsScalar,
             (ActualRhsTypeCleaned::Flags & RowMajorBit) ? RowMajor : ColMajor, bool(RhsBlasTraits::NeedToConjugate),
             (Dest::Flags & RowMajorBit) ? RowMajor : ColMajor, Dest::InnerStrideAtCompileTime>,
-        ActualLhsTypeCleaned, ActualRhsTypeCleaned, Dest, BlockingType>;
+        ActualLhsTypeCleaned, ActualRhsTypeCleaned, Dest, BlockingType>
+        GemmFunctor;
 
     BlockingType blocking(dst.rows(), dst.cols(), lhs.cols(), 1, true);
     internal::parallelize_gemm<(Dest::MaxRowsAtCompileTime > 32 || Dest::MaxRowsAtCompileTime == Dynamic)>(

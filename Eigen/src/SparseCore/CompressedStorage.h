@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_COMPRESSED_STORAGE_H
 #define EIGEN_COMPRESSED_STORAGE_H
@@ -25,10 +24,14 @@ namespace internal {
 template <typename Scalar_, typename StorageIndex_>
 class CompressedStorage {
  public:
-  using Scalar = Scalar_;
-  using StorageIndex = StorageIndex_;
+  typedef Scalar_ Scalar;
+  typedef StorageIndex_ StorageIndex;
 
-  CompressedStorage() = default;
+ protected:
+  typedef typename NumTraits<Scalar>::Real RealScalar;
+
+ public:
+  CompressedStorage() : m_values(0), m_indices(0), m_size(0), m_allocatedSize(0) {}
 
   explicit CompressedStorage(Index size) : m_values(0), m_indices(0), m_size(0), m_allocatedSize(0) { resize(size); }
 
@@ -69,9 +72,10 @@ class CompressedStorage {
   void resize(Index size, double reserveSizeFactor = 0) {
     if (m_allocatedSize < size) {
       // Avoid underflow on the std::min<Index> call by choosing the smaller index type.
-      using SmallerIndexType = std::conditional_t<static_cast<size_t>((std::numeric_limits<Index>::max)()) <
-                                                      static_cast<size_t>((std::numeric_limits<StorageIndex>::max)()),
-                                                  Index, StorageIndex>;
+      using SmallerIndexType =
+          typename std::conditional<static_cast<size_t>((std::numeric_limits<Index>::max)()) <
+                                        static_cast<size_t>((std::numeric_limits<StorageIndex>::max)()),
+                                    Index, StorageIndex>::type;
       Index realloc_size =
           (std::min<Index>)(NumTraits<SmallerIndexType>::highest(), size + Index(reserveSizeFactor * double(size)));
       if (realloc_size < size) internal::throw_std_bad_alloc();
@@ -189,10 +193,10 @@ class CompressedStorage {
   }
 
  protected:
-  Scalar* m_values = nullptr;
-  StorageIndex* m_indices = nullptr;
-  Index m_size = 0;
-  Index m_allocatedSize = 0;
+  Scalar* m_values;
+  StorageIndex* m_indices;
+  Index m_size;
+  Index m_allocatedSize;
 };
 
 }  // end namespace internal

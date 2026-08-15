@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_ROTATIONBASE_H
 #define EIGEN_ROTATIONBASE_H
@@ -34,11 +33,11 @@ class RotationBase {
  public:
   enum { Dim = Dim_ };
   /** the scalar type of the coefficients */
-  using Scalar = typename internal::traits<Derived>::Scalar;
+  typedef typename internal::traits<Derived>::Scalar Scalar;
 
   /** corresponding linear transformation matrix type */
-  using RotationMatrixType = Matrix<Scalar, Dim, Dim>;
-  using VectorType = Matrix<Scalar, Dim, 1>;
+  typedef Matrix<Scalar, Dim, Dim> RotationMatrixType;
+  typedef Matrix<Scalar, Dim, 1> VectorType;
 
  public:
   EIGEN_DEVICE_FUNC inline const Derived& derived() const { return *static_cast<const Derived*>(this); }
@@ -48,7 +47,7 @@ class RotationBase {
   EIGEN_DEVICE_FUNC inline RotationMatrixType toRotationMatrix() const { return derived().toRotationMatrix(); }
 
   /** \returns an equivalent rotation matrix
-   * This function is added to conform with the Transform class' naming scheme.
+   * This function is added to be conform with the Transform class' naming scheme.
    */
   EIGEN_DEVICE_FUNC inline RotationMatrixType matrix() const { return derived().toRotationMatrix(); }
 
@@ -112,7 +111,7 @@ namespace internal {
 template <typename RotationDerived, typename MatrixType>
 struct rotation_base_generic_product_selector<RotationDerived, MatrixType, false> {
   enum { Dim = RotationDerived::Dim };
-  using ReturnType = Matrix<typename RotationDerived::Scalar, Dim, Dim>;
+  typedef Matrix<typename RotationDerived::Scalar, Dim, Dim> ReturnType;
   EIGEN_DEVICE_FUNC static inline ReturnType run(const RotationDerived& r, const MatrixType& m) {
     return r.toRotationMatrix() * m;
   }
@@ -120,7 +119,7 @@ struct rotation_base_generic_product_selector<RotationDerived, MatrixType, false
 
 template <typename RotationDerived, typename Scalar, int Dim, int MaxDim>
 struct rotation_base_generic_product_selector<RotationDerived, DiagonalMatrix<Scalar, Dim, MaxDim>, false> {
-  using ReturnType = Transform<Scalar, Dim, Affine>;
+  typedef Transform<Scalar, Dim, Affine> ReturnType;
   EIGEN_DEVICE_FUNC static inline ReturnType run(const RotationDerived& r,
                                                  const DiagonalMatrix<Scalar, Dim, MaxDim>& m) {
     ReturnType res(r);
@@ -132,7 +131,7 @@ struct rotation_base_generic_product_selector<RotationDerived, DiagonalMatrix<Sc
 template <typename RotationDerived, typename OtherVectorType>
 struct rotation_base_generic_product_selector<RotationDerived, OtherVectorType, true> {
   enum { Dim = RotationDerived::Dim };
-  using ReturnType = Matrix<typename RotationDerived::Scalar, Dim, 1>;
+  typedef Matrix<typename RotationDerived::Scalar, Dim, 1> ReturnType;
   EIGEN_DEVICE_FUNC static EIGEN_STRONG_INLINE ReturnType run(const RotationDerived& r, const OtherVectorType& v) {
     return r._transformVector(v);
   }
@@ -169,7 +168,7 @@ namespace internal {
 
 /** \internal
  *
- * Helper function to convert an arbitrary rotation object to a rotation matrix.
+ * Helper function to return an arbitrary rotation object to a rotation matrix.
  *
  * \tparam Scalar the numeric type of the matrix coefficients
  * \tparam Dim the dimension of the current space

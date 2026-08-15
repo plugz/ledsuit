@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_SPARSESPARSEPRODUCTWITHPRUNING_H
 #define EIGEN_SPARSESPARSEPRODUCTWITHPRUNING_H
@@ -22,24 +21,26 @@ namespace internal {
 template <typename Lhs, typename Rhs, typename ResultType>
 static void sparse_sparse_product_with_pruning_impl(const Lhs& lhs, const Rhs& rhs, ResultType& res,
                                                     const typename ResultType::RealScalar& tolerance) {
-  using RhsScalar = typename remove_all_t<Rhs>::Scalar;
-  using ResScalar = typename remove_all_t<ResultType>::Scalar;
-  using StorageIndex = typename remove_all_t<Lhs>::StorageIndex;
+  // return sparse_sparse_product_with_pruning_impl2(lhs,rhs,res);
+
+  typedef typename remove_all_t<Rhs>::Scalar RhsScalar;
+  typedef typename remove_all_t<ResultType>::Scalar ResScalar;
+  typedef typename remove_all_t<Lhs>::StorageIndex StorageIndex;
 
   // make sure to call innerSize/outerSize since we fake the storage order.
   Index rows = lhs.innerSize();
   Index cols = rhs.outerSize();
+  // Index size = lhs.outerSize();
   eigen_assert(lhs.outerSize() == rhs.innerSize());
 
   // allocate a temporary buffer
   AmbiVector<ResScalar, StorageIndex> tempVector(rows);
 
   // mimics a resizeByInnerOuter:
-  EIGEN_IF_CONSTEXPR (ResultType::IsRowMajor) {
+  if (ResultType::IsRowMajor)
     res.resize(cols, rows);
-  } else {
+  else
     res.resize(rows, cols);
-  }
 
   evaluator<Lhs> lhsEval(lhs);
   evaluator<Rhs> rhsEval(rhs);
@@ -55,11 +56,14 @@ static void sparse_sparse_product_with_pruning_impl(const Lhs& lhs, const Rhs& r
   res.reserve(estimated_nnz_prod);
   double ratioColRes = double(estimated_nnz_prod) / (double(lhs.rows()) * double(rhs.cols()));
   for (Index j = 0; j < cols; ++j) {
-    // FIXME: compute a more accurate per-column nnz ratio for res.
+    // FIXME:
+    // double ratioColRes = (double(rhs.innerVector(j).nonZeros()) +
+    // double(lhs.nonZeros())/double(lhs.cols()))/double(lhs.rows());
+    // let's do a more accurate determination of the nnz ratio for the current column j of res
     tempVector.init(ratioColRes);
     tempVector.setZero();
     for (typename evaluator<Rhs>::InnerIterator rhsIt(rhsEval, j); rhsIt; ++rhsIt) {
-      // FIXME: rewrite as tmp += rhsIt.value() * lhs.col(rhsIt.index()).
+      // FIXME should be written like this: tmp += rhsIt.value() * lhs.col(rhsIt.index())
       tempVector.restart();
       RhsScalar x = rhsIt.value();
       for (typename evaluator<Lhs>::InnerIterator lhsIt(lhsEval, rhsIt.index()); lhsIt; ++lhsIt) {
@@ -80,10 +84,10 @@ struct sparse_sparse_product_with_pruning_selector;
 
 template <typename Lhs, typename Rhs, typename ResultType>
 struct sparse_sparse_product_with_pruning_selector<Lhs, Rhs, ResultType, ColMajor, ColMajor, ColMajor> {
-  using RealScalar = typename ResultType::RealScalar;
+  typedef typename ResultType::RealScalar RealScalar;
 
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, const RealScalar& tolerance) {
-    remove_all_t<ResultType> res_{res.rows(), res.cols()};
+    remove_all_t<ResultType> res_(res.rows(), res.cols());
     internal::sparse_sparse_product_with_pruning_impl<Lhs, Rhs, ResultType>(lhs, rhs, res_, tolerance);
     res.swap(res_);
   }
@@ -91,11 +95,11 @@ struct sparse_sparse_product_with_pruning_selector<Lhs, Rhs, ResultType, ColMajo
 
 template <typename Lhs, typename Rhs, typename ResultType>
 struct sparse_sparse_product_with_pruning_selector<Lhs, Rhs, ResultType, ColMajor, ColMajor, RowMajor> {
-  using RealScalar = typename ResultType::RealScalar;
+  typedef typename ResultType::RealScalar RealScalar;
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, const RealScalar& tolerance) {
     // we need a col-major matrix to hold the result
-    using SparseTemporaryType = SparseMatrix<typename ResultType::Scalar, ColMajor, typename ResultType::StorageIndex>;
-    SparseTemporaryType res_{res.rows(), res.cols()};
+    typedef SparseMatrix<typename ResultType::Scalar, ColMajor, typename ResultType::StorageIndex> SparseTemporaryType;
+    SparseTemporaryType res_(res.rows(), res.cols());
     internal::sparse_sparse_product_with_pruning_impl<Lhs, Rhs, SparseTemporaryType>(lhs, rhs, res_, tolerance);
     res = res_;
   }
@@ -103,10 +107,10 @@ struct sparse_sparse_product_with_pruning_selector<Lhs, Rhs, ResultType, ColMajo
 
 template <typename Lhs, typename Rhs, typename ResultType>
 struct sparse_sparse_product_with_pruning_selector<Lhs, Rhs, ResultType, RowMajor, RowMajor, RowMajor> {
-  using RealScalar = typename ResultType::RealScalar;
+  typedef typename ResultType::RealScalar RealScalar;
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, const RealScalar& tolerance) {
     // let's transpose the product to get a column x column product
-    remove_all_t<ResultType> res_{res.rows(), res.cols()};
+    remove_all_t<ResultType> res_(res.rows(), res.cols());
     internal::sparse_sparse_product_with_pruning_impl<Rhs, Lhs, ResultType>(rhs, lhs, res_, tolerance);
     res.swap(res_);
   }
@@ -114,22 +118,28 @@ struct sparse_sparse_product_with_pruning_selector<Lhs, Rhs, ResultType, RowMajo
 
 template <typename Lhs, typename Rhs, typename ResultType>
 struct sparse_sparse_product_with_pruning_selector<Lhs, Rhs, ResultType, RowMajor, RowMajor, ColMajor> {
-  using RealScalar = typename ResultType::RealScalar;
+  typedef typename ResultType::RealScalar RealScalar;
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, const RealScalar& tolerance) {
-    using ColMajorMatrixLhs = SparseMatrix<typename Lhs::Scalar, ColMajor, typename Lhs::StorageIndex>;
-    using ColMajorMatrixRhs = SparseMatrix<typename Rhs::Scalar, ColMajor, typename Lhs::StorageIndex>;
+    typedef SparseMatrix<typename Lhs::Scalar, ColMajor, typename Lhs::StorageIndex> ColMajorMatrixLhs;
+    typedef SparseMatrix<typename Rhs::Scalar, ColMajor, typename Lhs::StorageIndex> ColMajorMatrixRhs;
     ColMajorMatrixLhs colLhs(lhs);
     ColMajorMatrixRhs colRhs(rhs);
     internal::sparse_sparse_product_with_pruning_impl<ColMajorMatrixLhs, ColMajorMatrixRhs, ResultType>(colLhs, colRhs,
                                                                                                         res, tolerance);
+
+    // let's transpose the product to get a column x column product
+    //     typedef SparseMatrix<typename ResultType::Scalar> SparseTemporaryType;
+    //     SparseTemporaryType res_(res.cols(), res.rows());
+    //     sparse_sparse_product_with_pruning_impl<Rhs,Lhs,SparseTemporaryType>(rhs, lhs, res_);
+    //     res = res_.transpose();
   }
 };
 
 template <typename Lhs, typename Rhs, typename ResultType>
 struct sparse_sparse_product_with_pruning_selector<Lhs, Rhs, ResultType, ColMajor, RowMajor, RowMajor> {
-  using RealScalar = typename ResultType::RealScalar;
+  typedef typename ResultType::RealScalar RealScalar;
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, const RealScalar& tolerance) {
-    using RowMajorMatrixLhs = SparseMatrix<typename Lhs::Scalar, RowMajor, typename Lhs::StorageIndex>;
+    typedef SparseMatrix<typename Lhs::Scalar, RowMajor, typename Lhs::StorageIndex> RowMajorMatrixLhs;
     RowMajorMatrixLhs rowLhs(lhs);
     sparse_sparse_product_with_pruning_selector<RowMajorMatrixLhs, Rhs, ResultType, RowMajor, RowMajor>(rowLhs, rhs,
                                                                                                         res, tolerance);
@@ -138,9 +148,9 @@ struct sparse_sparse_product_with_pruning_selector<Lhs, Rhs, ResultType, ColMajo
 
 template <typename Lhs, typename Rhs, typename ResultType>
 struct sparse_sparse_product_with_pruning_selector<Lhs, Rhs, ResultType, RowMajor, ColMajor, RowMajor> {
-  using RealScalar = typename ResultType::RealScalar;
+  typedef typename ResultType::RealScalar RealScalar;
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, const RealScalar& tolerance) {
-    using RowMajorMatrixRhs = SparseMatrix<typename Rhs::Scalar, RowMajor, typename Lhs::StorageIndex>;
+    typedef SparseMatrix<typename Rhs::Scalar, RowMajor, typename Lhs::StorageIndex> RowMajorMatrixRhs;
     RowMajorMatrixRhs rowRhs(rhs);
     sparse_sparse_product_with_pruning_selector<Lhs, RowMajorMatrixRhs, ResultType, RowMajor, RowMajor, RowMajor>(
         lhs, rowRhs, res, tolerance);
@@ -149,9 +159,9 @@ struct sparse_sparse_product_with_pruning_selector<Lhs, Rhs, ResultType, RowMajo
 
 template <typename Lhs, typename Rhs, typename ResultType>
 struct sparse_sparse_product_with_pruning_selector<Lhs, Rhs, ResultType, ColMajor, RowMajor, ColMajor> {
-  using RealScalar = typename ResultType::RealScalar;
+  typedef typename ResultType::RealScalar RealScalar;
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, const RealScalar& tolerance) {
-    using ColMajorMatrixRhs = SparseMatrix<typename Rhs::Scalar, ColMajor, typename Lhs::StorageIndex>;
+    typedef SparseMatrix<typename Rhs::Scalar, ColMajor, typename Lhs::StorageIndex> ColMajorMatrixRhs;
     ColMajorMatrixRhs colRhs(rhs);
     internal::sparse_sparse_product_with_pruning_impl<Lhs, ColMajorMatrixRhs, ResultType>(lhs, colRhs, res, tolerance);
   }
@@ -159,9 +169,9 @@ struct sparse_sparse_product_with_pruning_selector<Lhs, Rhs, ResultType, ColMajo
 
 template <typename Lhs, typename Rhs, typename ResultType>
 struct sparse_sparse_product_with_pruning_selector<Lhs, Rhs, ResultType, RowMajor, ColMajor, ColMajor> {
-  using RealScalar = typename ResultType::RealScalar;
+  typedef typename ResultType::RealScalar RealScalar;
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res, const RealScalar& tolerance) {
-    using ColMajorMatrixLhs = SparseMatrix<typename Lhs::Scalar, ColMajor, typename Lhs::StorageIndex>;
+    typedef SparseMatrix<typename Lhs::Scalar, ColMajor, typename Lhs::StorageIndex> ColMajorMatrixLhs;
     ColMajorMatrixLhs colLhs(lhs);
     internal::sparse_sparse_product_with_pruning_impl<ColMajorMatrixLhs, Rhs, ResultType>(colLhs, rhs, res, tolerance);
   }

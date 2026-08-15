@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_AMBIVECTOR_H
 #define EIGEN_AMBIVECTOR_H
@@ -26,8 +25,9 @@ namespace internal {
 template <typename Scalar_, typename StorageIndex_>
 class AmbiVector {
  public:
-  using Scalar = Scalar_;
-  using StorageIndex = StorageIndex_;
+  typedef Scalar_ Scalar;
+  typedef StorageIndex_ StorageIndex;
+  typedef typename NumTraits<Scalar>::Real RealScalar;
 
   explicit AmbiVector(Index size)
       : m_buffer(0), m_zero(0), m_size(0), m_end(0), m_allocatedSize(0), m_allocatedElements(0), m_mode(-1) {
@@ -63,17 +63,7 @@ class AmbiVector {
   StorageIndex size() const { return m_size; }
 
  protected:
-  // element type of the linked list
-  struct ListEl {
-    StorageIndex next;
-    StorageIndex index;
-    Scalar value;
-  };
-
   StorageIndex convert_index(Index idx) { return internal::convert_index<StorageIndex>(idx); }
-
-  ListEl* listElements() { return static_cast<ListEl*>(static_cast<void*>(m_buffer)); }
-  const ListEl* listElements() const { return static_cast<const ListEl*>(static_cast<const void*>(m_buffer)); }
 
   void reallocate(Index size) {
     // if the size of the matrix is not too large, let's allocate a bit more than needed such
@@ -103,7 +93,15 @@ class AmbiVector {
     m_buffer = newBuffer;
   }
 
-  // used to store data in both modes
+ protected:
+  // element type of the linked list
+  struct ListEl {
+    StorageIndex next;
+    StorageIndex index;
+    Scalar value;
+  };
+
+  // used to store data in both mode
   Scalar* m_buffer;
   Scalar m_zero;
   StorageIndex m_size;
@@ -174,8 +172,8 @@ Scalar_& AmbiVector<Scalar_, StorageIndex_>::coeffRef(Index i) {
   if (m_mode == IsDense)
     return m_buffer[i];
   else {
-    ListEl* EIGEN_RESTRICT llElements = listElements();
-    // TODO: factor out the following code to reduce code generation
+    ListEl* EIGEN_RESTRICT llElements = reinterpret_cast<ListEl*>(m_buffer);
+    // TODO factorize the following code to reduce code generation
     eigen_assert(m_mode == IsSparse);
     if (m_llSize == 0) {
       // this is the first element
@@ -211,7 +209,7 @@ Scalar_& AmbiVector<Scalar_, StorageIndex_>::coeffRef(Index i) {
       } else {
         if (m_llSize >= m_allocatedElements) {
           reallocateSparse();
-          llElements = listElements();
+          llElements = reinterpret_cast<ListEl*>(m_buffer);
         }
         eigen_internal_assert(m_llSize < m_allocatedElements && "internal error: overflow in sparse mode");
         // let's insert a new coefficient
@@ -232,7 +230,7 @@ Scalar_& AmbiVector<Scalar_, StorageIndex_>::coeff(Index i) {
   if (m_mode == IsDense)
     return m_buffer[i];
   else {
-    ListEl* EIGEN_RESTRICT llElements = listElements();
+    ListEl* EIGEN_RESTRICT llElements = reinterpret_cast<ListEl*>(m_buffer);
     eigen_assert(m_mode == IsSparse);
     if ((m_llSize == 0) || (i < llElements[m_llStart].index)) {
       return m_zero;
@@ -240,8 +238,8 @@ Scalar_& AmbiVector<Scalar_, StorageIndex_>::coeff(Index i) {
       Index elid = m_llStart;
       while (elid >= 0 && llElements[elid].index < i) elid = llElements[elid].next;
 
-      if (elid >= 0 && llElements[elid].index == i)
-        return llElements[elid].value;
+      if (llElements[elid].index == i)
+        return llElements[m_llCurrent].value;
       else
         return m_zero;
     }
@@ -252,8 +250,8 @@ Scalar_& AmbiVector<Scalar_, StorageIndex_>::coeff(Index i) {
 template <typename Scalar_, typename StorageIndex_>
 class AmbiVector<Scalar_, StorageIndex_>::Iterator {
  public:
-  using Scalar = Scalar_;
-  using RealScalar = typename NumTraits<Scalar>::Real;
+  typedef Scalar_ Scalar;
+  typedef typename NumTraits<Scalar>::Real RealScalar;
 
   /** Default constructor
    * \param vec the vector on which we iterate
@@ -271,7 +269,7 @@ class AmbiVector<Scalar_, StorageIndex_>::Iterator {
       m_cachedIndex = m_vector.m_start - 1;
       ++(*this);
     } else {
-      const ListEl* EIGEN_RESTRICT llElements = m_vector.listElements();
+      ListEl* EIGEN_RESTRICT llElements = reinterpret_cast<ListEl*>(m_vector.m_buffer);
       m_currentEl = m_vector.m_llStart;
       while (m_currentEl >= 0 && abs(llElements[m_currentEl].value) <= m_epsilon)
         m_currentEl = llElements[m_currentEl].next;
@@ -301,7 +299,7 @@ class AmbiVector<Scalar_, StorageIndex_>::Iterator {
       else
         m_cachedIndex = -1;
     } else {
-      const ListEl* EIGEN_RESTRICT llElements = m_vector.listElements();
+      ListEl* EIGEN_RESTRICT llElements = reinterpret_cast<ListEl*>(m_vector.m_buffer);
       do {
         m_currentEl = llElements[m_currentEl].next;
       } while (m_currentEl >= 0 && abs(llElements[m_currentEl].value) <= m_epsilon);

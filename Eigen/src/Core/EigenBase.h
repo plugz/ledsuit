@@ -7,7 +7,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_EIGENBASE_H
 #define EIGEN_EIGENBASE_H
@@ -41,10 +40,10 @@ struct EigenBase {
    * Deprecation is not marked with a doxygen comment because there are too many existing usages to add the deprecation
    * attribute.
    */
-  using Index = Eigen::Index;
+  typedef Eigen::Index Index;
 
   // FIXME is it needed?
-  using StorageKind = typename internal::traits<Derived>::StorageKind;
+  typedef typename internal::traits<Derived>::StorageKind StorageKind;
 
   /** \returns a reference to the derived object */
   EIGEN_DEVICE_FUNC constexpr Derived& derived() { return *static_cast<Derived*>(this); }
@@ -54,7 +53,7 @@ struct EigenBase {
   EIGEN_DEVICE_FUNC inline constexpr Derived& const_cast_derived() const {
     return *static_cast<Derived*>(const_cast<EigenBase*>(this));
   }
-  EIGEN_DEVICE_FUNC constexpr inline const Derived& const_derived() const { return *static_cast<const Derived*>(this); }
+  EIGEN_DEVICE_FUNC inline const Derived& const_derived() const { return *static_cast<const Derived*>(this); }
 
   /** \returns the number of rows. \sa cols(), RowsAtCompileTime */
   EIGEN_DEVICE_FUNC constexpr Index rows() const noexcept { return derived().rows(); }
@@ -66,13 +65,13 @@ struct EigenBase {
 
   /** \internal Don't use it, but do the equivalent: \code dst = *this; \endcode */
   template <typename Dest>
-  EIGEN_DEVICE_FUNC constexpr inline void evalTo(Dest& dst) const {
+  EIGEN_DEVICE_FUNC inline void evalTo(Dest& dst) const {
     derived().evalTo(dst);
   }
 
   /** \internal Don't use it, but do the equivalent: \code dst += *this; \endcode */
   template <typename Dest>
-  EIGEN_DEVICE_FUNC constexpr inline void addTo(Dest& dst) const {
+  EIGEN_DEVICE_FUNC inline void addTo(Dest& dst) const {
     // This is the default implementation,
     // derived class can reimplement it in a more optimized way.
     typename Dest::PlainObject res(rows(), cols());
@@ -82,7 +81,7 @@ struct EigenBase {
 
   /** \internal Don't use it, but do the equivalent: \code dst -= *this; \endcode */
   template <typename Dest>
-  EIGEN_DEVICE_FUNC constexpr inline void subTo(Dest& dst) const {
+  EIGEN_DEVICE_FUNC inline void subTo(Dest& dst) const {
     // This is the default implementation,
     // derived class can reimplement it in a more optimized way.
     typename Dest::PlainObject res(rows(), cols());
@@ -92,7 +91,7 @@ struct EigenBase {
 
   /** \internal Don't use it, but do the equivalent: \code dst.applyOnTheRight(*this); \endcode */
   template <typename Dest>
-  EIGEN_DEVICE_FUNC constexpr inline void applyThisOnTheRight(Dest& dst) const {
+  EIGEN_DEVICE_FUNC inline void applyThisOnTheRight(Dest& dst) const {
     // This is the default implementation,
     // derived class can reimplement it in a more optimized way.
     dst = dst * this->derived();
@@ -100,7 +99,7 @@ struct EigenBase {
 
   /** \internal Don't use it, but do the equivalent: \code dst.applyOnTheLeft(*this); \endcode */
   template <typename Dest>
-  EIGEN_DEVICE_FUNC constexpr inline void applyThisOnTheLeft(Dest& dst) const {
+  EIGEN_DEVICE_FUNC inline void applyThisOnTheLeft(Dest& dst) const {
     // This is the default implementation,
     // derived class can reimplement it in a more optimized way.
     dst = this->derived() * dst;
@@ -126,21 +125,21 @@ struct EigenBase {
  */
 template <typename Derived>
 template <typename OtherDerived>
-EIGEN_DEVICE_FUNC constexpr Derived& DenseBase<Derived>::operator=(const EigenBase<OtherDerived>& other) {
+EIGEN_DEVICE_FUNC Derived& DenseBase<Derived>::operator=(const EigenBase<OtherDerived>& other) {
   call_assignment(derived(), other.derived());
   return derived();
 }
 
 template <typename Derived>
 template <typename OtherDerived>
-EIGEN_DEVICE_FUNC constexpr Derived& DenseBase<Derived>::operator+=(const EigenBase<OtherDerived>& other) {
+EIGEN_DEVICE_FUNC Derived& DenseBase<Derived>::operator+=(const EigenBase<OtherDerived>& other) {
   call_assignment(derived(), other.derived(), internal::add_assign_op<Scalar, typename OtherDerived::Scalar>());
   return derived();
 }
 
 template <typename Derived>
 template <typename OtherDerived>
-EIGEN_DEVICE_FUNC constexpr Derived& DenseBase<Derived>::operator-=(const EigenBase<OtherDerived>& other) {
+EIGEN_DEVICE_FUNC Derived& DenseBase<Derived>::operator-=(const EigenBase<OtherDerived>& other) {
   call_assignment(derived(), other.derived(), internal::sub_assign_op<Scalar, typename OtherDerived::Scalar>());
   return derived();
 }

@@ -29,7 +29,6 @@
  *    Singular Value Decomposition - SVD.
  ********************************************************************************
 */
-// SPDX-License-Identifier: BSD-3-Clause
 
 #ifndef EIGEN_JACOBISVD_LAPACKE_H
 #define EIGEN_JACOBISVD_LAPACKE_H
@@ -122,10 +121,6 @@ EIGEN_LAPACK_SVD_OPTIONS(ComputeThinU | ComputeThinV)
 EIGEN_LAPACK_SVD_OPTIONS(ComputeFullU | ComputeFullV)
 EIGEN_LAPACK_SVD_OPTIONS(ComputeThinU | ComputeFullV)
 EIGEN_LAPACK_SVD_OPTIONS(ComputeFullU | ComputeThinV)
-
-#undef EIGEN_LAPACK_SVD_OPTIONS
-
-#undef EIGEN_LAPACKE_SVD
 
 }  // end namespace Eigen
 

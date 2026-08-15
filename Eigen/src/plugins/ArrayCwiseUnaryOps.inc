@@ -1,8 +1,46 @@
-// SPDX-FileCopyrightText: The Eigen Authors
-// SPDX-License-Identifier: MPL-2.0
+typedef CwiseUnaryOp<internal::scalar_abs_op<Scalar>, const Derived> AbsReturnType;
+typedef CwiseUnaryOp<internal::scalar_arg_op<Scalar>, const Derived> ArgReturnType;
+typedef CwiseUnaryOp<internal::scalar_carg_op<Scalar>, const Derived> CArgReturnType;
+typedef CwiseUnaryOp<internal::scalar_abs2_op<Scalar>, const Derived> Abs2ReturnType;
+typedef CwiseUnaryOp<internal::scalar_sqrt_op<Scalar>, const Derived> SqrtReturnType;
+typedef CwiseUnaryOp<internal::scalar_cbrt_op<Scalar>, const Derived> CbrtReturnType;
+typedef CwiseUnaryOp<internal::scalar_rsqrt_op<Scalar>, const Derived> RsqrtReturnType;
+typedef CwiseUnaryOp<internal::scalar_sign_op<Scalar>, const Derived> SignReturnType;
+typedef CwiseUnaryOp<internal::scalar_inverse_op<Scalar>, const Derived> InverseReturnType;
+typedef CwiseUnaryOp<internal::scalar_boolean_not_op<Scalar>, const Derived> BooleanNotReturnType;
+typedef CwiseUnaryOp<internal::scalar_bitwise_not_op<Scalar>, const Derived> BitwiseNotReturnType;
 
-using LdexpReturnType = CwiseUnaryOp<internal::scalar_ldexp_op<Scalar>, const Derived>;
-using IsFiniteTypedReturnType = CwiseUnaryOp<internal::scalar_isfinite_op<Scalar, true>, const Derived>;
+typedef CwiseUnaryOp<internal::scalar_exp_op<Scalar>, const Derived> ExpReturnType;
+typedef CwiseUnaryOp<internal::scalar_exp2_op<Scalar>, const Derived> Exp2ReturnType;
+typedef CwiseUnaryOp<internal::scalar_expm1_op<Scalar>, const Derived> Expm1ReturnType;
+typedef CwiseUnaryOp<internal::scalar_log_op<Scalar>, const Derived> LogReturnType;
+typedef CwiseUnaryOp<internal::scalar_log1p_op<Scalar>, const Derived> Log1pReturnType;
+typedef CwiseUnaryOp<internal::scalar_log10_op<Scalar>, const Derived> Log10ReturnType;
+typedef CwiseUnaryOp<internal::scalar_log2_op<Scalar>, const Derived> Log2ReturnType;
+typedef CwiseUnaryOp<internal::scalar_cos_op<Scalar>, const Derived> CosReturnType;
+typedef CwiseUnaryOp<internal::scalar_sin_op<Scalar>, const Derived> SinReturnType;
+typedef CwiseUnaryOp<internal::scalar_tan_op<Scalar>, const Derived> TanReturnType;
+typedef CwiseUnaryOp<internal::scalar_acos_op<Scalar>, const Derived> AcosReturnType;
+typedef CwiseUnaryOp<internal::scalar_asin_op<Scalar>, const Derived> AsinReturnType;
+typedef CwiseUnaryOp<internal::scalar_atan_op<Scalar>, const Derived> AtanReturnType;
+typedef CwiseUnaryOp<internal::scalar_tanh_op<Scalar>, const Derived> TanhReturnType;
+typedef CwiseUnaryOp<internal::scalar_logistic_op<Scalar>, const Derived> LogisticReturnType;
+typedef CwiseUnaryOp<internal::scalar_sinh_op<Scalar>, const Derived> SinhReturnType;
+typedef CwiseUnaryOp<internal::scalar_atanh_op<Scalar>, const Derived> AtanhReturnType;
+typedef CwiseUnaryOp<internal::scalar_asinh_op<Scalar>, const Derived> AsinhReturnType;
+typedef CwiseUnaryOp<internal::scalar_acosh_op<Scalar>, const Derived> AcoshReturnType;
+typedef CwiseUnaryOp<internal::scalar_cosh_op<Scalar>, const Derived> CoshReturnType;
+typedef CwiseUnaryOp<internal::scalar_square_op<Scalar>, const Derived> SquareReturnType;
+typedef CwiseUnaryOp<internal::scalar_cube_op<Scalar>, const Derived> CubeReturnType;
+typedef CwiseUnaryOp<internal::scalar_round_op<Scalar>, const Derived> RoundReturnType;
+typedef CwiseUnaryOp<internal::scalar_rint_op<Scalar>, const Derived> RintReturnType;
+typedef CwiseUnaryOp<internal::scalar_floor_op<Scalar>, const Derived> FloorReturnType;
+typedef CwiseUnaryOp<internal::scalar_ceil_op<Scalar>, const Derived> CeilReturnType;
+typedef CwiseUnaryOp<internal::scalar_trunc_op<Scalar>, const Derived> TruncReturnType;
+typedef CwiseUnaryOp<internal::scalar_isnan_op<Scalar>, const Derived> IsNaNReturnType;
+typedef CwiseUnaryOp<internal::scalar_isinf_op<Scalar>, const Derived> IsInfReturnType;
+typedef CwiseUnaryOp<internal::scalar_isfinite_op<Scalar>, const Derived> IsFiniteReturnType;
+typedef CwiseUnaryOp<internal::scalar_isfinite_op<Scalar, true>, const Derived> IsFiniteTypedReturnType;
 
 /** \returns an expression of the coefficient-wise absolute value of \c *this
  *
@@ -11,7 +49,7 @@ using IsFiniteTypedReturnType = CwiseUnaryOp<internal::scalar_isfinite_op<Scalar
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_abs">Math functions</a>, abs2()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(abs, internal::scalar_abs_op, AbsReturnType)
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const AbsReturnType abs() const { return AbsReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise phase angle of \c *this
  *
@@ -20,9 +58,9 @@ EIGEN_MAKE_CWISE_UNARY_OP(abs, internal::scalar_abs_op, AbsReturnType)
  *
  * \sa abs()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(arg, internal::scalar_arg_op, ArgReturnType)
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const ArgReturnType arg() const { return ArgReturnType(derived()); }
 
-EIGEN_MAKE_CWISE_UNARY_OP(carg, internal::scalar_carg_op, CArgReturnType)
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const CArgReturnType carg() const { return CArgReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise squared absolute value of \c *this
  *
@@ -31,7 +69,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(carg, internal::scalar_carg_op, CArgReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_abs2">Math functions</a>, abs(), square()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(abs2, internal::scalar_abs2_op, Abs2ReturnType)
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Abs2ReturnType abs2() const { return Abs2ReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise exponential of *this.
  *
@@ -44,7 +82,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(abs2, internal::scalar_abs2_op, Abs2ReturnType)
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_exp">Math functions</a>, exp2(), pow(), log(), sin(),
  * cos()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(exp, internal::scalar_exp_op, ExpReturnType)
+EIGEN_DEVICE_FUNC inline const ExpReturnType exp() const { return ExpReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise exponential of *this.
  *
@@ -53,23 +91,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(exp, internal::scalar_exp_op, ExpReturnType)
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_exp">Math functions</a>, exp(), pow(), log(), sin(),
  * cos()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(exp2, internal::scalar_exp2_op, Exp2ReturnType)
-
-/** \returns an expression of the coefficients of \c *this multiplied by \f$ 2^{exponent} \f$.
- *
- * The scaling is exact: it directly adjusts the floating-point exponent, so it produces
- * correct results (including denormals) even when \f$ 2^{exponent} \f$ itself is not
- * representable as a \c Scalar. The result saturates to zero or infinity when the scaled
- * value falls outside the finite range of \c Scalar.
- *
- * Example: \include Cwise_ldexp.cpp
- * Output: \verbinclude Cwise_ldexp.out
- *
- * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_ldexp">Math functions</a>, exp2(), pow()
- */
-EIGEN_DEVICE_FUNC constexpr inline const LdexpReturnType ldexp(int exponent) const {
-  return LdexpReturnType(derived(), internal::scalar_ldexp_op<Scalar>(exponent));
-}
+EIGEN_DEVICE_FUNC inline const Exp2ReturnType exp2() const { return Exp2ReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise exponential of *this minus 1.
  *
@@ -78,7 +100,7 @@ EIGEN_DEVICE_FUNC constexpr inline const LdexpReturnType ldexp(int exponent) con
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_expm1">Math functions</a>, exp()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(expm1, internal::scalar_expm1_op, Expm1ReturnType)
+EIGEN_DEVICE_FUNC inline const Expm1ReturnType expm1() const { return Expm1ReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise logarithm of *this.
  *
@@ -90,16 +112,16 @@ EIGEN_MAKE_CWISE_UNARY_OP(expm1, internal::scalar_expm1_op, Expm1ReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_log">Math functions</a>, log()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(log, internal::scalar_log_op, LogReturnType)
+EIGEN_DEVICE_FUNC inline const LogReturnType log() const { return LogReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise logarithm of 1 plus \c *this.
  *
- * In exact arithmetic, \c x.log1p() is equivalent to \c (x+1).log(),
+ * In exact arithmetic, \c x.log() is equivalent to \c (x+1).log(),
  * however, with finite precision, this function is much more accurate when \c x is close to zero.
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_log1p">Math functions</a>, log()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(log1p, internal::scalar_log1p_op, Log1pReturnType)
+EIGEN_DEVICE_FUNC inline const Log1pReturnType log1p() const { return Log1pReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise base-10 logarithm of *this.
  *
@@ -110,14 +132,14 @@ EIGEN_MAKE_CWISE_UNARY_OP(log1p, internal::scalar_log1p_op, Log1pReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_log10">Math functions</a>, log()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(log10, internal::scalar_log10_op, Log10ReturnType)
+EIGEN_DEVICE_FUNC inline const Log10ReturnType log10() const { return Log10ReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise base-2 logarithm of *this.
  *
  * This function computes the coefficient-wise base-2 logarithm.
  *
  */
-EIGEN_MAKE_CWISE_UNARY_OP(log2, internal::scalar_log2_op, Log2ReturnType)
+EIGEN_DEVICE_FUNC inline const Log2ReturnType log2() const { return Log2ReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise square root of *this.
  *
@@ -129,7 +151,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(log2, internal::scalar_log2_op, Log2ReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_sqrt">Math functions</a>, pow(), square(), cbrt()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(sqrt, internal::scalar_sqrt_op, SqrtReturnType)
+EIGEN_DEVICE_FUNC inline const SqrtReturnType sqrt() const { return SqrtReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise cube root of *this.
  *
@@ -140,7 +162,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(sqrt, internal::scalar_sqrt_op, SqrtReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_cbrt">Math functions</a>, sqrt(), pow(), square()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(cbrt, internal::scalar_cbrt_op, CbrtReturnType)
+EIGEN_DEVICE_FUNC inline const CbrtReturnType cbrt() const { return CbrtReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise inverse square root of *this.
  *
@@ -151,7 +173,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(cbrt, internal::scalar_cbrt_op, CbrtReturnType)
  *
  * \sa pow(), square()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(rsqrt, internal::scalar_rsqrt_op, RsqrtReturnType)
+EIGEN_DEVICE_FUNC inline const RsqrtReturnType rsqrt() const { return RsqrtReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise signum of *this.
  *
@@ -162,7 +184,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(rsqrt, internal::scalar_rsqrt_op, RsqrtReturnType)
  *
  * \sa pow(), square()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(sign, internal::scalar_sign_op, SignReturnType)
+EIGEN_DEVICE_FUNC inline const SignReturnType sign() const { return SignReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise cosine of *this.
  *
@@ -174,7 +196,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(sign, internal::scalar_sign_op, SignReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_cos">Math functions</a>, sin(), acos()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(cos, internal::scalar_cos_op, CosReturnType)
+EIGEN_DEVICE_FUNC inline const CosReturnType cos() const { return CosReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise sine of *this.
  *
@@ -186,7 +208,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(cos, internal::scalar_cos_op, CosReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_sin">Math functions</a>, cos(), asin()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(sin, internal::scalar_sin_op, SinReturnType)
+EIGEN_DEVICE_FUNC inline const SinReturnType sin() const { return SinReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise tan of *this.
  *
@@ -195,7 +217,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(sin, internal::scalar_sin_op, SinReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_tan">Math functions</a>, cos(), sin()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(tan, internal::scalar_tan_op, TanReturnType)
+EIGEN_DEVICE_FUNC inline const TanReturnType tan() const { return TanReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise arc tan of *this.
  *
@@ -204,7 +226,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(tan, internal::scalar_tan_op, TanReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_atan">Math functions</a>, tan(), asin(), acos()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(atan, internal::scalar_atan_op, AtanReturnType)
+EIGEN_DEVICE_FUNC inline const AtanReturnType atan() const { return AtanReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise arc cosine of *this.
  *
@@ -213,7 +235,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(atan, internal::scalar_atan_op, AtanReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_acos">Math functions</a>, cos(), asin()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(acos, internal::scalar_acos_op, AcosReturnType)
+EIGEN_DEVICE_FUNC inline const AcosReturnType acos() const { return AcosReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise arc sine of *this.
  *
@@ -222,7 +244,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(acos, internal::scalar_acos_op, AcosReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_asin">Math functions</a>, sin(), acos()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(asin, internal::scalar_asin_op, AsinReturnType)
+EIGEN_DEVICE_FUNC inline const AsinReturnType asin() const { return AsinReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise hyperbolic tan of *this.
  *
@@ -231,7 +253,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(asin, internal::scalar_asin_op, AsinReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_tanh">Math functions</a>, tan(), sinh(), cosh()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(tanh, internal::scalar_tanh_op, TanhReturnType)
+EIGEN_DEVICE_FUNC inline const TanhReturnType tanh() const { return TanhReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise hyperbolic sin of *this.
  *
@@ -240,7 +262,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(tanh, internal::scalar_tanh_op, TanhReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_sinh">Math functions</a>, sin(), tanh(), cosh()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(sinh, internal::scalar_sinh_op, SinhReturnType)
+EIGEN_DEVICE_FUNC inline const SinhReturnType sinh() const { return SinhReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise hyperbolic cos of *this.
  *
@@ -249,29 +271,29 @@ EIGEN_MAKE_CWISE_UNARY_OP(sinh, internal::scalar_sinh_op, SinhReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_cosh">Math functions</a>, tanh(), sinh(), cosh()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(cosh, internal::scalar_cosh_op, CoshReturnType)
+EIGEN_DEVICE_FUNC inline const CoshReturnType cosh() const { return CoshReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise inverse hyperbolic tan of *this.
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_atanh">Math functions</a>, atanh(), asinh(), acosh()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(atanh, internal::scalar_atanh_op, AtanhReturnType)
+EIGEN_DEVICE_FUNC inline const AtanhReturnType atanh() const { return AtanhReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise inverse hyperbolic sin of *this.
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_asinh">Math functions</a>, atanh(), asinh(), acosh()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(asinh, internal::scalar_asinh_op, AsinhReturnType)
+EIGEN_DEVICE_FUNC inline const AsinhReturnType asinh() const { return AsinhReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise inverse hyperbolic cos of *this.
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_acosh">Math functions</a>, atanh(), asinh(), acosh()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(acosh, internal::scalar_acosh_op, AcoshReturnType)
+EIGEN_DEVICE_FUNC inline const AcoshReturnType acosh() const { return AcoshReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise logistic of *this.
  */
-EIGEN_MAKE_CWISE_UNARY_OP(logistic, internal::scalar_logistic_op, LogisticReturnType)
+EIGEN_DEVICE_FUNC inline const LogisticReturnType logistic() const { return LogisticReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise inverse of *this.
  *
@@ -280,7 +302,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(logistic, internal::scalar_logistic_op, LogisticReturn
  *
  * \sa operator/(), operator*()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(inverse, internal::scalar_inverse_op, InverseReturnType)
+EIGEN_DEVICE_FUNC inline const InverseReturnType inverse() const { return InverseReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise square of *this.
  *
@@ -289,7 +311,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(inverse, internal::scalar_inverse_op, InverseReturnTyp
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_squareE">Math functions</a>, abs2(), cube(), pow()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(square, internal::scalar_square_op, SquareReturnType)
+EIGEN_DEVICE_FUNC inline const SquareReturnType square() const { return SquareReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise cube of *this.
  *
@@ -298,7 +320,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(square, internal::scalar_square_op, SquareReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_cube">Math functions</a>, square(), pow()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(cube, internal::scalar_cube_op, CubeReturnType)
+EIGEN_DEVICE_FUNC inline const CubeReturnType cube() const { return CubeReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise rint of *this.
  *
@@ -307,7 +329,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(cube, internal::scalar_cube_op, CubeReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_rint">Math functions</a>, ceil(), floor()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(rint, internal::scalar_rint_op, RintReturnType)
+EIGEN_DEVICE_FUNC inline const RintReturnType rint() const { return RintReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise round of *this.
  *
@@ -316,7 +338,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(rint, internal::scalar_rint_op, RintReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_round">Math functions</a>, ceil(), floor()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(round, internal::scalar_round_op, RoundReturnType)
+EIGEN_DEVICE_FUNC inline const RoundReturnType round() const { return RoundReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise floor of *this.
  *
@@ -325,7 +347,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(round, internal::scalar_round_op, RoundReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_floor">Math functions</a>, ceil(), round()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(floor, internal::scalar_floor_op, FloorReturnType)
+EIGEN_DEVICE_FUNC inline const FloorReturnType floor() const { return FloorReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise ceil of *this.
  *
@@ -334,7 +356,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(floor, internal::scalar_floor_op, FloorReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_ceil">Math functions</a>, floor(), round()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(ceil, internal::scalar_ceil_op, CeilReturnType)
+EIGEN_DEVICE_FUNC inline const CeilReturnType ceil() const { return CeilReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise truncation of *this.
  *
@@ -343,11 +365,11 @@ EIGEN_MAKE_CWISE_UNARY_OP(ceil, internal::scalar_ceil_op, CeilReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_trunc">Math functions</a>, floor(), round()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(trunc, internal::scalar_trunc_op, TruncReturnType)
+EIGEN_DEVICE_FUNC inline const TruncReturnType trunc() const { return TruncReturnType(derived()); }
 
 template <int N>
 struct ShiftRightXpr {
-  using Type = CwiseUnaryOp<internal::scalar_shift_right_op<Scalar, N>, const Derived>;
+  typedef CwiseUnaryOp<internal::scalar_shift_right_op<Scalar, N>, const Derived> Type;
 };
 
 /** \returns an expression of \c *this with the \a Scalar type arithmetically
@@ -358,13 +380,13 @@ struct ShiftRightXpr {
  * \sa shiftLeft()
  */
 template <int N>
-EIGEN_DEVICE_FUNC constexpr typename ShiftRightXpr<N>::Type shiftRight() const {
+EIGEN_DEVICE_FUNC typename ShiftRightXpr<N>::Type shiftRight() const {
   return typename ShiftRightXpr<N>::Type(derived());
 }
 
 template <int N>
 struct ShiftLeftXpr {
-  using Type = CwiseUnaryOp<internal::scalar_shift_left_op<Scalar, N>, const Derived>;
+  typedef CwiseUnaryOp<internal::scalar_shift_left_op<Scalar, N>, const Derived> Type;
 };
 
 /** \returns an expression of \c *this with the \a Scalar type logically
@@ -375,7 +397,7 @@ struct ShiftLeftXpr {
  * \sa shiftRight()
  */
 template <int N>
-EIGEN_DEVICE_FUNC constexpr typename ShiftLeftXpr<N>::Type shiftLeft() const {
+EIGEN_DEVICE_FUNC typename ShiftLeftXpr<N>::Type shiftLeft() const {
   return typename ShiftLeftXpr<N>::Type(derived());
 }
 
@@ -386,7 +408,7 @@ EIGEN_DEVICE_FUNC constexpr typename ShiftLeftXpr<N>::Type shiftLeft() const {
  *
  * \sa isfinite(), isinf()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(isNaN, internal::scalar_isnan_op, IsNaNReturnType)
+EIGEN_DEVICE_FUNC inline const IsNaNReturnType isNaN() const { return IsNaNReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise isinf of *this.
  *
@@ -395,7 +417,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(isNaN, internal::scalar_isnan_op, IsNaNReturnType)
  *
  * \sa isnan(), isfinite()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(isInf, internal::scalar_isinf_op, IsInfReturnType)
+EIGEN_DEVICE_FUNC inline const IsInfReturnType isInf() const { return IsInfReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise isfinite of *this.
  *
@@ -404,8 +426,8 @@ EIGEN_MAKE_CWISE_UNARY_OP(isInf, internal::scalar_isinf_op, IsInfReturnType)
  *
  * \sa isnan(), isinf()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(isFinite, internal::scalar_isfinite_op, IsFiniteReturnType)
-EIGEN_DEVICE_FUNC constexpr inline const IsFiniteTypedReturnType isFiniteTyped() const {
+EIGEN_DEVICE_FUNC inline const IsFiniteReturnType isFinite() const { return IsFiniteReturnType(derived()); }
+EIGEN_DEVICE_FUNC inline const IsFiniteTypedReturnType isFiniteTyped() const {
   return IsFiniteTypedReturnType(derived());
 }
 
@@ -416,24 +438,31 @@ EIGEN_DEVICE_FUNC constexpr inline const IsFiniteTypedReturnType isFiniteTyped()
  *
  * \sa operator!=()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(operator!, internal::scalar_boolean_not_op, BooleanNotReturnType)
+EIGEN_DEVICE_FUNC inline const BooleanNotReturnType operator!() const { return BooleanNotReturnType(derived()); }
 
 /** \returns an expression of the bitwise ~ operator of *this
  */
-EIGEN_MAKE_CWISE_UNARY_OP(operator~, internal::scalar_bitwise_not_op, BitwiseNotReturnType)
+EIGEN_DEVICE_FUNC inline const BitwiseNotReturnType operator~() const { return BitwiseNotReturnType(derived()); }
 
 // --- SpecialFunctions module ---
 
-/** \returns an expression of the coefficient-wise ln(|gamma(*this)|).
+typedef CwiseUnaryOp<internal::scalar_lgamma_op<Scalar>, const Derived> LgammaReturnType;
+typedef CwiseUnaryOp<internal::scalar_digamma_op<Scalar>, const Derived> DigammaReturnType;
+typedef CwiseUnaryOp<internal::scalar_erf_op<Scalar>, const Derived> ErfReturnType;
+typedef CwiseUnaryOp<internal::scalar_erfc_op<Scalar>, const Derived> ErfcReturnType;
+typedef CwiseUnaryOp<internal::scalar_ndtri_op<Scalar>, const Derived> NdtriReturnType;
+
+/** \cpp11 \returns an expression of the coefficient-wise ln(|gamma(*this)|).
  *
  * \specialfunctions_module
  *
- * \note This function supports only float and double scalar types. To support other scalar types,
- * the user has to provide implementations of lgamma(T) for any scalar type T to be supported.
+ * \note This function supports only float and double scalar types in c++11 mode. To support other scalar types,
+ * or float/double in non c++11 mode, the user has to provide implementations of lgamma(T) for any scalar
+ * type T to be supported.
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_lgamma">Math functions</a>, digamma()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(lgamma, internal::scalar_lgamma_op, LgammaReturnType)
+EIGEN_DEVICE_FUNC inline const LgammaReturnType lgamma() const { return LgammaReturnType(derived()); }
 
 /** \returns an expression of the coefficient-wise digamma (psi, derivative of lgamma).
  *
@@ -446,33 +475,35 @@ EIGEN_MAKE_CWISE_UNARY_OP(lgamma, internal::scalar_lgamma_op, LgammaReturnType)
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_digamma">Math functions</a>, Eigen::digamma(),
  * Eigen::polygamma(), lgamma()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(digamma, internal::scalar_digamma_op, DigammaReturnType)
+EIGEN_DEVICE_FUNC inline const DigammaReturnType digamma() const { return DigammaReturnType(derived()); }
 
-/** \returns an expression of the coefficient-wise Gauss error
+/** \cpp11 \returns an expression of the coefficient-wise Gauss error
  * function of *this.
  *
  * \specialfunctions_module
  *
- * \note This function supports only float and double scalar types. To support other scalar types,
- * the user has to provide implementations of erf(T) for any scalar type T to be supported.
+ * \note This function supports only float and double scalar types in c++11 mode. To support other scalar types,
+ * or float/double in non c++11 mode, the user has to provide implementations of erf(T) for any scalar
+ * type T to be supported.
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_erf">Math functions</a>, erfc()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(erf, internal::scalar_erf_op, ErfReturnType)
+EIGEN_DEVICE_FUNC inline const ErfReturnType erf() const { return ErfReturnType(derived()); }
 
-/** \returns an expression of the coefficient-wise Complementary error
+/** \cpp11 \returns an expression of the coefficient-wise Complementary error
  * function of *this.
  *
  * \specialfunctions_module
  *
- * \note This function supports only float and double scalar types. To support other scalar types,
- * the user has to provide implementations of erfc(T) for any scalar type T to be supported.
+ * \note This function supports only float and double scalar types in c++11 mode. To support other scalar types,
+ * or float/double in non c++11 mode, the user has to provide implementations of erfc(T) for any scalar
+ * type T to be supported.
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_erfc">Math functions</a>, erf()
  */
-EIGEN_MAKE_CWISE_UNARY_OP(erfc, internal::scalar_erfc_op, ErfcReturnType)
+EIGEN_DEVICE_FUNC inline const ErfcReturnType erfc() const { return ErfcReturnType(derived()); }
 
-/** \returns an expression of the coefficient-wise inverse of the CDF of the Normal distribution
+/** \returns an expression of the coefficient-wise inverse of the CDF of the Normal distribution function
  * function of *this.
  *
  * \specialfunctions_module
@@ -485,7 +516,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(erfc, internal::scalar_erfc_op, ErfcReturnType)
  *
  * \sa <a href="group__CoeffwiseMathFunctions.html#cwisetable_ndtri">Math functions</a>
  */
-EIGEN_MAKE_CWISE_UNARY_OP(ndtri, internal::scalar_ndtri_op, NdtriReturnType)
+EIGEN_DEVICE_FUNC inline const NdtriReturnType ndtri() const { return NdtriReturnType(derived()); }
 
 template <typename ScalarExponent>
 using UnaryPowReturnType =
@@ -507,7 +538,7 @@ using UnaryPowReturnType =
  * \sa ArrayBase::pow(ArrayBase), square(), cube(), exp(), log()
  */
 template <typename ScalarExponent>
-EIGEN_DEVICE_FUNC constexpr EIGEN_STRONG_INLINE const UnaryPowReturnType<ScalarExponent> pow(
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const UnaryPowReturnType<ScalarExponent> pow(
     const ScalarExponent& exponent) const {
   return UnaryPowReturnType<ScalarExponent>(derived(), internal::scalar_unary_pow_op<Scalar, ScalarExponent>(exponent));
 }

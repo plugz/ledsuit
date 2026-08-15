@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_MISC_IMAGE_H
 #define EIGEN_MISC_IMAGE_H
@@ -23,17 +22,24 @@ namespace internal {
  */
 template <typename DecompositionType>
 struct traits<image_retval_base<DecompositionType> > {
-  using MatrixType = typename DecompositionType::MatrixType;
-  using ReturnType =
-      Matrix<typename MatrixType::Scalar, MatrixType::RowsAtCompileTime, Dynamic, traits<MatrixType>::Options,
-             MatrixType::MaxRowsAtCompileTime, MatrixType::MaxColsAtCompileTime>;
+  typedef typename DecompositionType::MatrixType MatrixType;
+  typedef Matrix<typename MatrixType::Scalar,
+                 MatrixType::RowsAtCompileTime,  // the image is a subspace of the destination space, whose
+                                                 // dimension is the number of rows of the original matrix
+                 Dynamic,                        // we don't know at compile time the dimension of the image (the rank)
+                 traits<MatrixType>::Options,
+                 MatrixType::MaxRowsAtCompileTime,  // the image matrix will consist of columns from the original
+                                                    // matrix,
+                 MatrixType::MaxColsAtCompileTime   // so it has the same number of rows and at most as many columns.
+                 >
+      ReturnType;
 };
 
 template <typename DecompositionType_>
 struct image_retval_base : public ReturnByValue<image_retval_base<DecompositionType_> > {
-  using DecompositionType = DecompositionType_;
-  using MatrixType = typename DecompositionType::MatrixType;
-  using Base = ReturnByValue<image_retval_base>;
+  typedef DecompositionType_ DecompositionType;
+  typedef typename DecompositionType::MatrixType MatrixType;
+  typedef ReturnByValue<image_retval_base> Base;
 
   image_retval_base(const DecompositionType& dec, const MatrixType& originalMatrix)
       : m_dec(dec), m_rank(dec.rank()), m_cols(m_rank == 0 ? 1 : m_rank), m_originalMatrix(originalMatrix) {}

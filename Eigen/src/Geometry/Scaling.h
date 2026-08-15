@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_SCALING_H
 #define EIGEN_SCALING_H
@@ -24,7 +23,7 @@ namespace Eigen {
  *
  * \tparam Scalar_ the scalar type, i.e., the type of the coefficients.
  *
- * This class represents a uniform scaling transformation. It is the return
+ * This class represent a uniform scaling transformation. It is the return
  * type of Scaling(Scalar), and most of the time this is the only way it
  * is used. In particular, this class is not aimed to be used to store a scaling transformation,
  * but rather to make easier the constructions and updates of Transform objects.
@@ -40,7 +39,7 @@ namespace internal {
 template <typename Scalar, int Dim, int Mode>
 struct uniformscaling_times_affine_returntype {
   enum { NewMode = int(Mode) == int(Isometry) ? Affine : Mode };
-  using type = Transform<Scalar, Dim, NewMode>;
+  typedef Transform<Scalar, Dim, NewMode> type;
 };
 }  // namespace internal
 
@@ -48,7 +47,7 @@ template <typename Scalar_>
 class UniformScaling {
  public:
   /** the scalar type of the coefficients */
-  using Scalar = Scalar_;
+  typedef Scalar_ Scalar;
 
  protected:
   Scalar m_factor;
@@ -81,7 +80,7 @@ class UniformScaling {
   }
 
   /** Concatenates a uniform scaling and a linear transformation matrix */
-  // TODO: return an expression instead of a dense matrix.
+  // TODO returns an expression
   template <typename Derived>
   inline typename Eigen::internal::plain_matrix_type<Derived>::type operator*(const MatrixBase<Derived>& other) const {
     return other * m_factor;
@@ -130,7 +129,7 @@ class UniformScaling {
 // NOTE this operator is defined in MatrixBase and not as a friend function
 // of UniformScaling to fix an internal crash of Intel's ICC
 template <typename Derived, typename Scalar>
-EIGEN_EXPR_BINARYOP_SCALAR_RETURN_TYPE(Derived, Scalar, internal::scalar_product_op)
+EIGEN_EXPR_BINARYOP_SCALAR_RETURN_TYPE(Derived, Scalar, product)
 operator*(const MatrixBase<Derived>& matrix, const UniformScaling<Scalar>& s) {
   return matrix.derived() * s.factor();
 }
@@ -171,13 +170,13 @@ inline typename DiagonalWrapper<const Derived>::PlainObject Scaling(MatrixBase<D
 }
 
 /** \deprecated */
-using AlignedScaling2f = DiagonalMatrix<float, 2>;
+typedef DiagonalMatrix<float, 2> AlignedScaling2f;
 /** \deprecated */
-using AlignedScaling2d = DiagonalMatrix<double, 2>;
+typedef DiagonalMatrix<double, 2> AlignedScaling2d;
 /** \deprecated */
-using AlignedScaling3f = DiagonalMatrix<float, 3>;
+typedef DiagonalMatrix<float, 3> AlignedScaling3f;
 /** \deprecated */
-using AlignedScaling3d = DiagonalMatrix<double, 3>;
+typedef DiagonalMatrix<double, 3> AlignedScaling3d;
 //@}
 
 template <typename Scalar>

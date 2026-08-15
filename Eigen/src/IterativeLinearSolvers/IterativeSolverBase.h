@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_ITERATIVE_SOLVER_BASE_H
 #define EIGEN_ITERATIVE_SOLVER_BASE_H
@@ -18,29 +17,37 @@ namespace Eigen {
 
 namespace internal {
 
-template <typename T>
-auto is_ref_compatible_test(T& matrix) -> decltype(Ref<const T>(matrix), std::true_type());
-std::false_type is_ref_compatible_test(...);
+template <typename MatrixType>
+struct is_ref_compatible_impl {
+ private:
+  template <typename T0>
+  struct any_conversion {
+    template <typename T>
+    any_conversion(const volatile T&);
+    template <typename T>
+    any_conversion(T&);
+  };
+  struct yes {
+    int a[1];
+  };
+  struct no {
+    int a[2];
+  };
+
+  template <typename T>
+  static yes test(const Ref<const T>&, int);
+  template <typename T>
+  static no test(any_conversion<T>, ...);
+
+ public:
+  static MatrixType ms_from;
+  enum { value = sizeof(test<MatrixType>(ms_from, 0)) == sizeof(yes) };
+};
 
 template <typename MatrixType>
-using is_ref_compatible = decltype(is_ref_compatible_test(std::declval<remove_all_t<MatrixType>&>()));
-
-// Returns a \a rows x \a cols matrix whose columns are an orthonormal basis of a random subspace,
-// obtained by QR-orthonormalizing a random matrix. The IDR(s)-type solvers use this to build the
-// shadow space; the basis only has to be (almost surely) non-degenerate, so any random seed is fine.
-template <typename MatrixType>
-MatrixType random_orthonormal_basis(Index rows, Index cols) {
-  HouseholderQR<MatrixType> qr(MatrixType::Random(rows, cols));
-  return qr.householderQ() * MatrixType::Identity(rows, cols);
-}
-
-template <typename RealScalar>
-EIGEN_DEVICE_FUNC RealScalar iterative_solver_scaling_factor(RealScalar norm) {
-  // Scale only when forming a quadratic recurrence term from norm may underflow or overflow.
-  const RealScalar sqrtMin = numext::sqrt((std::numeric_limits<RealScalar>::min)());
-  const RealScalar sqrtMax = numext::sqrt((std::numeric_limits<RealScalar>::max)());
-  return norm < sqrtMin || norm > sqrtMax ? norm : RealScalar(1);
-}
+struct is_ref_compatible {
+  enum { value = is_ref_compatible_impl<remove_all_t<MatrixType>>::value };
+};
 
 template <typename MatrixType, bool MatrixFree = !internal::is_ref_compatible<MatrixType>::value>
 class generic_matrix_wrapper;
@@ -49,16 +56,15 @@ class generic_matrix_wrapper;
 template <typename MatrixType>
 class generic_matrix_wrapper<MatrixType, false> {
  public:
-  using ActualMatrixType = Ref<const MatrixType>;
+  typedef Ref<const MatrixType> ActualMatrixType;
   template <int UpLo>
   struct ConstSelfAdjointViewReturnType {
-    using Type = typename ActualMatrixType::template ConstSelfAdjointViewReturnType<UpLo>::Type;
+    typedef typename ActualMatrixType::template ConstSelfAdjointViewReturnType<UpLo>::Type Type;
   };
 
   enum { MatrixFree = false };
 
-  // Default-construct: passing (0,0) trips the size assertion for fixed-size MatrixType (#1704).
-  generic_matrix_wrapper() : m_dummy(), m_matrix(m_dummy) {}
+  generic_matrix_wrapper() : m_dummy(0, 0), m_matrix(m_dummy) {}
 
   template <typename InputType>
   generic_matrix_wrapper(const InputType& mat) : m_matrix(mat) {}
@@ -87,15 +93,15 @@ class generic_matrix_wrapper<MatrixType, false> {
 template <typename MatrixType>
 class generic_matrix_wrapper<MatrixType, true> {
  public:
-  using ActualMatrixType = MatrixType;
+  typedef MatrixType ActualMatrixType;
   template <int UpLo>
   struct ConstSelfAdjointViewReturnType {
-    using Type = ActualMatrixType;
+    typedef ActualMatrixType Type;
   };
 
   enum { MatrixFree = true };
 
-  generic_matrix_wrapper() = default;
+  generic_matrix_wrapper() : mp_matrix(0) {}
 
   generic_matrix_wrapper(const MatrixType& mat) : mp_matrix(&mat) {}
 
@@ -104,7 +110,7 @@ class generic_matrix_wrapper<MatrixType, true> {
   void grab(const MatrixType& mat) { mp_matrix = &mat; }
 
  protected:
-  const ActualMatrixType* mp_matrix = nullptr;
+  const ActualMatrixType* mp_matrix;
 };
 
 }  // namespace internal
@@ -117,15 +123,15 @@ class generic_matrix_wrapper<MatrixType, true> {
 template <typename Derived>
 class IterativeSolverBase : public SparseSolverBase<Derived> {
  protected:
-  using Base = SparseSolverBase<Derived>;
+  typedef SparseSolverBase<Derived> Base;
   using Base::m_isInitialized;
 
  public:
-  using MatrixType = typename internal::traits<Derived>::MatrixType;
-  using Preconditioner = typename internal::traits<Derived>::Preconditioner;
-  using Scalar = typename MatrixType::Scalar;
-  using StorageIndex = typename MatrixType::StorageIndex;
-  using RealScalar = typename MatrixType::RealScalar;
+  typedef typename internal::traits<Derived>::MatrixType MatrixType;
+  typedef typename internal::traits<Derived>::Preconditioner Preconditioner;
+  typedef typename MatrixType::Scalar Scalar;
+  typedef typename MatrixType::StorageIndex StorageIndex;
+  typedef typename MatrixType::RealScalar RealScalar;
 
   enum { ColsAtCompileTime = MatrixType::ColsAtCompileTime, MaxColsAtCompileTime = MatrixType::MaxColsAtCompileTime };
 
@@ -152,6 +158,8 @@ class IterativeSolverBase : public SparseSolverBase<Derived> {
   }
 
   IterativeSolverBase(IterativeSolverBase&&) = default;
+
+  ~IterativeSolverBase() {}
 
   /** Initializes the iterative solver for the sparsity pattern of the matrix \a A for further solving \c Ax=b problems.
    *
@@ -222,9 +230,7 @@ class IterativeSolverBase : public SparseSolverBase<Derived> {
 
   /** Sets the tolerance threshold used by the stopping criteria.
    *
-   * This value is used as an upper bound to the relative residual error: |Ax-b|/|b|, or to the measure the solver
-   * documents instead; LeastSquaresConjugateGradient bounds the normal-equation residual |A'(Ax-b)|/|A'b|, and
-   * LSMR bounds |A'(Ax-b)|/(|A| |Ax-b|).
+   * This value is used as an upper bound to the relative residual error: |Ax-b|/|b|.
    * The default value is the machine precision given by NumTraits<Scalar>::epsilon()
    */
   Derived& setTolerance(const RealScalar& tolerance) {
@@ -259,9 +265,7 @@ class IterativeSolverBase : public SparseSolverBase<Derived> {
   }
 
   /** \returns the tolerance error reached during the last solve.
-   * It is a close approximation of the true relative residual error |Ax-b|/|b|, unless the solver documents a
-   * different measure: LeastSquaresConjugateGradient reports the normal-equation residual |A'(Ax-b)|/|A'b|, and
-   * LSMR reports the normal-equation residual estimate |A'(Ax-b)|/(|A| |Ax-b|).
+   * It is a close approximation of the true relative residual error |Ax-b|/|b|.
    */
   RealScalar error() const {
     eigen_assert(m_isInitialized && "IterativeSolverBase is not initialized.");
@@ -294,7 +298,7 @@ class IterativeSolverBase : public SparseSolverBase<Derived> {
     Index rhsCols = b.cols();
     Index size = b.rows();
     DestDerived& dest(aDest.derived());
-    using DestScalar = typename DestDerived::Scalar;
+    typedef typename DestDerived::Scalar DestScalar;
     Eigen::Matrix<DestScalar, Dynamic, 1> tb(size);
     Eigen::Matrix<DestScalar, Dynamic, 1> tx(cols());
     // We do not directly fill dest because sparse expressions have to be free of aliasing issue.
@@ -332,7 +336,7 @@ class IterativeSolverBase : public SparseSolverBase<Derived> {
       typename Rhs::ConstColXpr bk(b, k);
       derived()._solve_vector_with_guess_impl(bk, xk);
 
-      // The call to _solve_vector_with_guess_impl updates m_info, so if it failed for a previous column
+      // The call to _solve_vector_with_guess updates m_info, so if it failed for a previous column
       // we need to restore it to the worst value.
       if (m_info == NumericalIssue)
         global_info = NumericalIssue;
@@ -364,8 +368,8 @@ class IterativeSolverBase : public SparseSolverBase<Derived> {
     m_tolerance = NumTraits<Scalar>::epsilon();
   }
 
-  using MatrixWrapper = internal::generic_matrix_wrapper<MatrixType>;
-  using ActualMatrixType = typename MatrixWrapper::ActualMatrixType;
+  typedef internal::generic_matrix_wrapper<MatrixType> MatrixWrapper;
+  typedef typename MatrixWrapper::ActualMatrixType ActualMatrixType;
 
   const ActualMatrixType& matrix() const { return m_matrixWrapper.matrix(); }
 

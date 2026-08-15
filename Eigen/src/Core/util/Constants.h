@@ -8,7 +8,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_CONSTANTS_H
 #define EIGEN_CONSTANTS_H
@@ -23,21 +22,21 @@ namespace Eigen {
  *
  * Changing the value of Dynamic breaks the ABI, as Dynamic is often used as a template parameter for Matrix.
  */
-constexpr int Dynamic = -1;
+const int Dynamic = -1;
 
 /** This value means that a signed quantity (e.g., a signed index) is not known at compile-time, and that instead its
  * value has to be specified at runtime.
  */
-constexpr int DynamicIndex = 0xffffff;
+const int DynamicIndex = 0xffffff;
 
 /** This value means that the requested value is not defined.
  */
-constexpr int Undefined = 0xfffffe;
+const int Undefined = 0xfffffe;
 
 /** This value means +Infinity; it is currently used only as the p parameter to MatrixBase::lpNorm<int>().
  * The value Infinity there means the L-infinity norm.
  */
-constexpr int Infinity = -1;
+const int Infinity = -1;
 
 /** This value means that the cost to evaluate an expression coefficient is either very expensive or
  * cannot be known at compile time.
@@ -46,7 +45,7 @@ constexpr int Infinity = -1;
  * and very very expensive expressions. It thus must also be large enough to make sure unrolling won't happen and that
  * sub expressions will be evaluated, but not too large to avoid overflow.
  */
-constexpr int HugeCost = 10000;
+const int HugeCost = 10000;
 
 /** \defgroup flags Flags
  * \ingroup Core_Module
@@ -68,16 +67,16 @@ constexpr int HugeCost = 10000;
  * For an expression, this determines the storage order of
  * the matrix created by evaluation of that expression.
  * \sa \blank  \ref TopicStorageOrders */
-constexpr unsigned int RowMajorBit = 0x1;
+const unsigned int RowMajorBit = 0x1;
 
 /** \ingroup flags
  * means the expression should be evaluated by the calling expression */
-constexpr unsigned int EvalBeforeNestingBit = 0x2;
+const unsigned int EvalBeforeNestingBit = 0x2;
 
 /** \ingroup flags
  * \deprecated
  * means the expression should be evaluated before any assignment */
-EIGEN_DEPRECATED constexpr unsigned int EvalBeforeAssigningBit = 0x4;
+EIGEN_DEPRECATED const unsigned int EvalBeforeAssigningBit = 0x4;  // FIXME deprecated
 
 /** \ingroup flags
  *
@@ -95,7 +94,7 @@ EIGEN_DEPRECATED constexpr unsigned int EvalBeforeAssigningBit = 0x4;
  * \note This bit can be set regardless of whether vectorization is actually enabled.
  *       To check for actual vectorizability, see \a ActualPacketAccessBit.
  */
-constexpr unsigned int PacketAccessBit = 0x8;
+const unsigned int PacketAccessBit = 0x8;
 
 #ifdef EIGEN_VECTORIZE
 /** \ingroup flags
@@ -106,9 +105,9 @@ constexpr unsigned int PacketAccessBit = 0x8;
  * If vectorization is not enabled (EIGEN_VECTORIZE is not defined) this constant
  * is set to the value 0.
  */
-constexpr unsigned int ActualPacketAccessBit = PacketAccessBit;
+const unsigned int ActualPacketAccessBit = PacketAccessBit;
 #else
-constexpr unsigned int ActualPacketAccessBit = 0x0;
+const unsigned int ActualPacketAccessBit = 0x0;
 #endif
 
 /** \ingroup flags
@@ -131,7 +130,7 @@ constexpr unsigned int ActualPacketAccessBit = 0x0;
  * Product is a vector expression. Thus, vector Product expressions allow index-based coefficient access but
  * not index-based packet access, so they don't have the LinearAccessBit.
  */
-constexpr unsigned int LinearAccessBit = 0x10;
+const unsigned int LinearAccessBit = 0x10;
 
 /** \ingroup flags
  *
@@ -146,7 +145,7 @@ constexpr unsigned int LinearAccessBit = 0x10;
  * Expressions having LvalueBit also have their coeff() method returning a const reference instead of returning a new
  * value.
  */
-constexpr unsigned int LvalueBit = 0x20;
+const unsigned int LvalueBit = 0x20;
 
 /** \ingroup flags
  *
@@ -157,7 +156,7 @@ constexpr unsigned int LvalueBit = 0x20;
  *
  * See the comment on LvalueBit for an explanation of how LvalueBit and DirectAccessBit are mutually orthogonal.
  */
-constexpr unsigned int DirectAccessBit = 0x40;
+const unsigned int DirectAccessBit = 0x40;
 
 /** \deprecated \ingroup flags
  *
@@ -169,9 +168,9 @@ constexpr unsigned int DirectAccessBit = 0x40;
  * expression.packet<Aligned>(0);
  * \endcode
  */
-EIGEN_DEPRECATED constexpr unsigned int AlignedBit = 0x80;
+EIGEN_DEPRECATED const unsigned int AlignedBit = 0x80;
 
-constexpr unsigned int NestByRefBit = 0x100;
+const unsigned int NestByRefBit = 0x100;
 
 /** \ingroup flags
  *
@@ -180,7 +179,7 @@ constexpr unsigned int NestByRefBit = 0x100;
  * The precise choice will be decided at evaluation time or when
  * combined with other expressions.
  * \sa \blank  \ref RowMajorBit, \ref TopicStorageOrders */
-constexpr unsigned int NoPreferredStorageOrderBit = 0x200;
+const unsigned int NoPreferredStorageOrderBit = 0x200;
 
 /** \ingroup flags
   *
@@ -193,10 +192,10 @@ constexpr unsigned int NoPreferredStorageOrderBit = 0x200;
     inline const Index* innerNonZeroPtr() const;
     \endcode
   */
-constexpr unsigned int CompressedAccessBit = 0x400;
+const unsigned int CompressedAccessBit = 0x400;
 
 // list of flags that are inherited by default
-constexpr unsigned int HereditaryBits = RowMajorBit | EvalBeforeNestingBit;
+const unsigned int HereditaryBits = RowMajorBit | EvalBeforeNestingBit;
 
 /** \defgroup enums Enumerations
  * \ingroup Core_Module
@@ -357,11 +356,7 @@ enum NaNPropagationOptions {
  * and we do not know how to get rid of them (bug 450).
  */
 
-// NoChange is set to -1 (rather than 0) so that calls like resize(NoChange, n)
-// that land in a generic resize(Index, Index) overload — missing the NoChange_t
-// overload — trip the rows/cols >= 0 assertion instead of silently producing a
-// 0-sized dimension. See issue #656.
-enum NoChange_t { NoChange = -1 };
+enum NoChange_t { NoChange };
 enum Sequential_t { Sequential };
 enum Default_t { Default };
 
@@ -434,15 +429,6 @@ enum QRPreconditioners {
   DisableQRDecomposition = NoQRPreconditioner
 };
 
-// JacobiSVD and BDCSVD combine QR preconditioner flags with decomposition flags in a single template bitmask.
-constexpr int operator|(QRPreconditioners qr_preconditioner, DecompositionOptions decomposition_option) {
-  return static_cast<int>(qr_preconditioner) | static_cast<int>(decomposition_option);
-}
-
-constexpr int operator|(DecompositionOptions decomposition_option, QRPreconditioners qr_preconditioner) {
-  return static_cast<int>(decomposition_option) | static_cast<int>(qr_preconditioner);
-}
-
 #ifdef Success
 #error The preprocessor symbol 'Success' is defined, possibly by the X11 header file X.h
 #endif
@@ -489,16 +475,12 @@ enum Type {
   SVE = 0x6,
   HVX = 0x7,
   LSX = 0x8,
-  RVV10 = 0x9,
-  SME = 0xa,
 #if defined EIGEN_VECTORIZE_SSE
   Target = SSE
 #elif defined EIGEN_VECTORIZE_ALTIVEC
   Target = AltiVec
 #elif defined EIGEN_VECTORIZE_VSX
   Target = VSX
-#elif defined EIGEN_VECTORIZE_SME
-  Target = SME
 #elif defined EIGEN_VECTORIZE_NEON
   Target = NEON
 #elif defined EIGEN_VECTORIZE_SVE
@@ -509,8 +491,6 @@ enum Type {
   Target = HVX
 #elif defined EIGEN_VECTORIZE_LSX
   Target = LSX
-#elif defined EIGEN_VECTORIZE_RVV10
-  Target = RVV10
 #else
   Target = Generic
 #endif

@@ -7,7 +7,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_BICGSTAB_H
 #define EIGEN_BICGSTAB_H
@@ -32,9 +31,10 @@ namespace internal {
 template <typename MatrixType, typename Rhs, typename Dest, typename Preconditioner>
 bool bicgstab(const MatrixType& mat, const Rhs& rhs, Dest& x, const Preconditioner& precond, Index& iters,
               typename Dest::RealScalar& tol_error) {
-  using RealScalar = typename Dest::RealScalar;
-  using Scalar = typename Dest::Scalar;
-  using VectorType = Matrix<Scalar, Dynamic, 1>;
+  typedef typename Dest::RealScalar RealScalar;
+  typedef typename Dest::Scalar Scalar;
+  typedef Matrix<Scalar, Dynamic, 1> VectorType;
+  RealScalar tol = tol_error;
   Index maxIters = iters;
 
   Index n = mat.cols();
@@ -48,15 +48,13 @@ bool bicgstab(const MatrixType& mat, const Rhs& rhs, Dest& x, const Precondition
     x.setZero();
     return true;
   }
-
-  RealScalar tol = tol_error * rhs_norm;
-
   Scalar rho(1);
   Scalar alpha(0);
   Scalar w(1);
 
   VectorType v = VectorType::Zero(n), p = VectorType::Zero(n);
   VectorType y(n), z(n);
+  VectorType kt(n), ks(n);
 
   VectorType s(n), t(n);
 
@@ -129,8 +127,8 @@ namespace internal {
 
 template <typename MatrixType_, typename Preconditioner_>
 struct traits<BiCGSTAB<MatrixType_, Preconditioner_> > {
-  using MatrixType = MatrixType_;
-  using Preconditioner = Preconditioner_;
+  typedef MatrixType_ MatrixType;
+  typedef Preconditioner_ Preconditioner;
 };
 
 }  // namespace internal
@@ -147,12 +145,12 @@ struct traits<BiCGSTAB<MatrixType_, Preconditioner_> > {
  * \implsparsesolverconcept
  *
  * The maximal number of iterations and tolerance value can be controlled via the setMaxIterations()
- * and setTolerance() methods. The defaults are twice the number of columns of the matrix for the maximal
- * number of iterations and NumTraits<Scalar>::epsilon() for the tolerance.
+ * and setTolerance() methods. The defaults are the size of the problem for the maximal number of iterations
+ * and NumTraits<Scalar>::epsilon() for the tolerance.
  *
  * The tolerance corresponds to the relative residual error: |Ax-b|/|b|
  *
- * \b Performance: when using sparse matrices, best performance is achieved for a row-major sparse matrix format.
+ * \b Performance: when using sparse matrices, best performance is achied for a row-major sparse matrix format.
  * Moreover, in this case multi-threading can be exploited if the user code is compiled with OpenMP enabled.
  * See \ref TopicMultiThreading for details.
  *
@@ -168,8 +166,7 @@ struct traits<BiCGSTAB<MatrixType_, Preconditioner_> > {
  */
 template <typename MatrixType_, typename Preconditioner_>
 class BiCGSTAB : public IterativeSolverBase<BiCGSTAB<MatrixType_, Preconditioner_> > {
- protected:
-  using Base = IterativeSolverBase<BiCGSTAB>;
+  typedef IterativeSolverBase<BiCGSTAB> Base;
   using Base::m_error;
   using Base::m_info;
   using Base::m_isInitialized;
@@ -177,10 +174,10 @@ class BiCGSTAB : public IterativeSolverBase<BiCGSTAB<MatrixType_, Preconditioner
   using Base::matrix;
 
  public:
-  using MatrixType = MatrixType_;
-  using Scalar = typename MatrixType::Scalar;
-  using RealScalar = typename MatrixType::RealScalar;
-  using Preconditioner = Preconditioner_;
+  typedef MatrixType_ MatrixType;
+  typedef typename MatrixType::Scalar Scalar;
+  typedef typename MatrixType::RealScalar RealScalar;
+  typedef Preconditioner_ Preconditioner;
 
  public:
   /** Default constructor. */
@@ -199,6 +196,8 @@ class BiCGSTAB : public IterativeSolverBase<BiCGSTAB<MatrixType_, Preconditioner
   template <typename MatrixDerived>
   explicit BiCGSTAB(const EigenBase<MatrixDerived>& A) : Base(A.derived()) {}
 
+  ~BiCGSTAB() {}
+
   /** \internal */
   template <typename Rhs, typename Dest>
   void _solve_vector_with_guess_impl(const Rhs& b, Dest& x) const {
@@ -209,6 +208,8 @@ class BiCGSTAB : public IterativeSolverBase<BiCGSTAB<MatrixType_, Preconditioner
 
     m_info = (!ret) ? NumericalIssue : m_error <= Base::m_tolerance ? Success : NoConvergence;
   }
+
+ protected:
 };
 
 }  // end namespace Eigen

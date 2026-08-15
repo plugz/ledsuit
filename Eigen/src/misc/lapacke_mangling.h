@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: The Eigen Authors
-// SPDX-License-Identifier: MPL-2.0
-
 #ifndef LAPACK_HEADER_INCLUDED
 #define LAPACK_HEADER_INCLUDED
 

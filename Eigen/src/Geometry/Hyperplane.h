@@ -7,7 +7,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_HYPERPLANE_H
 #define EIGEN_HYPERPLANE_H
@@ -30,7 +29,7 @@ namespace Eigen {
  * \tparam AmbientDim_ the dimension of the ambient space, can be a compile time value or Dynamic.
  *             Notice that the dimension of the hyperplane is AmbientDim_-1.
  *
- * This class represents a hyperplane as the zero set of the implicit equation
+ * This class represents an hyperplane as the zero set of the implicit equation
  * \f$ n \cdot x + d = 0 \f$ where \f$ n \f$ is a unit normal vector of the plane (linear part)
  * and \f$ d \f$ is the distance (offset) to the origin.
  */
@@ -40,15 +39,15 @@ class Hyperplane {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF_VECTORIZABLE_FIXED_SIZE(Scalar_,
                                                              AmbientDim_ == Dynamic ? Dynamic : AmbientDim_ + 1)
   enum { AmbientDimAtCompileTime = AmbientDim_, Options = Options_ };
-  using Scalar = Scalar_;
-  using RealScalar = typename NumTraits<Scalar>::Real;
-  using Index = Eigen::Index;  ///< \deprecated since Eigen 3.3
-  using VectorType = Matrix<Scalar, AmbientDimAtCompileTime, 1>;
-  using Coefficients =
-      Matrix<Scalar, Index(AmbientDimAtCompileTime) == Dynamic ? Dynamic : Index(AmbientDimAtCompileTime) + 1, 1,
-             Options>;
-  using NormalReturnType = Block<Coefficients, AmbientDimAtCompileTime, 1>;
-  using ConstNormalReturnType = const Block<const Coefficients, AmbientDimAtCompileTime, 1>;
+  typedef Scalar_ Scalar;
+  typedef typename NumTraits<Scalar>::Real RealScalar;
+  typedef Eigen::Index Index;  ///< \deprecated since Eigen 3.3
+  typedef Matrix<Scalar, AmbientDimAtCompileTime, 1> VectorType;
+  typedef Matrix<Scalar, Index(AmbientDimAtCompileTime) == Dynamic ? Dynamic : Index(AmbientDimAtCompileTime) + 1, 1,
+                 Options>
+      Coefficients;
+  typedef Block<Coefficients, AmbientDimAtCompileTime, 1> NormalReturnType;
+  typedef const Block<const Coefficients, AmbientDimAtCompileTime, 1> ConstNormalReturnType;
 
   /** Default constructor without initialization */
   EIGEN_DEVICE_FUNC inline Hyperplane() {}
@@ -112,11 +111,13 @@ class Hyperplane {
    * If the dimension of the ambient space is greater than 2, then there isn't uniqueness,
    * so an arbitrary choice is made.
    */
-  // FIXME: for consistency, consider implementing as a static Through function.
+  // FIXME to be consistent with the rest this could be implemented as a static Through function ??
   EIGEN_DEVICE_FUNC explicit Hyperplane(const ParametrizedLine<Scalar, AmbientDimAtCompileTime>& parametrized) {
     normal() = parametrized.direction().unitOrthogonal();
     offset() = -parametrized.origin().dot(normal());
   }
+
+  EIGEN_DEVICE_FUNC ~Hyperplane() {}
 
   /** \returns the dimension in which the plane holds */
   EIGEN_DEVICE_FUNC inline Index dim() const {

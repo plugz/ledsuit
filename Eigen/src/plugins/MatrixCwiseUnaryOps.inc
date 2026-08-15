@@ -7,10 +7,19 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 // This file is included into the body of the base classes supporting matrix specific coefficient-wise functions.
-// These are MatrixBase, ArrayBase, and SparseMatrixBase.
+// This include MatrixBase and SparseMatrixBase.
+
+typedef CwiseUnaryOp<internal::scalar_abs_op<Scalar>, const Derived> CwiseAbsReturnType;
+typedef CwiseUnaryOp<internal::scalar_abs2_op<Scalar>, const Derived> CwiseAbs2ReturnType;
+typedef CwiseUnaryOp<internal::scalar_arg_op<Scalar>, const Derived> CwiseArgReturnType;
+typedef CwiseUnaryOp<internal::scalar_carg_op<Scalar>, const Derived> CwiseCArgReturnType;
+typedef CwiseUnaryOp<internal::scalar_sqrt_op<Scalar>, const Derived> CwiseSqrtReturnType;
+typedef CwiseUnaryOp<internal::scalar_cbrt_op<Scalar>, const Derived> CwiseCbrtReturnType;
+typedef CwiseUnaryOp<internal::scalar_square_op<Scalar>, const Derived> CwiseSquareReturnType;
+typedef CwiseUnaryOp<internal::scalar_sign_op<Scalar>, const Derived> CwiseSignReturnType;
+typedef CwiseUnaryOp<internal::scalar_inverse_op<Scalar>, const Derived> CwiseInverseReturnType;
 
 /// \returns an expression of the coefficient-wise absolute value of \c *this
 ///
@@ -21,7 +30,9 @@ EIGEN_DOC_UNARY_ADDONS(cwiseAbs, absolute value)
 ///
 /// \sa cwiseAbs2()
 ///
-EIGEN_MAKE_CWISE_UNARY_OP(cwiseAbs, internal::scalar_abs_op, CwiseAbsReturnType)
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const CwiseAbsReturnType cwiseAbs() const {
+  return CwiseAbsReturnType(derived());
+}
 
 /// \returns an expression of the coefficient-wise squared absolute value of \c *this
 ///
@@ -32,7 +43,9 @@ EIGEN_DOC_UNARY_ADDONS(cwiseAbs2, squared absolute value)
 ///
 /// \sa cwiseAbs()
 ///
-EIGEN_MAKE_CWISE_UNARY_OP(cwiseAbs2, internal::scalar_abs2_op, CwiseAbs2ReturnType)
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const CwiseAbs2ReturnType cwiseAbs2() const {
+  return CwiseAbs2ReturnType(derived());
+}
 
 /// \returns an expression of the coefficient-wise square root of *this.
 ///
@@ -43,7 +56,7 @@ EIGEN_DOC_UNARY_ADDONS(cwiseSqrt, square - root)
 ///
 /// \sa cwisePow(), cwiseSquare(), cwiseCbrt()
 ///
-EIGEN_MAKE_CWISE_UNARY_OP(cwiseSqrt, internal::scalar_sqrt_op, CwiseSqrtReturnType)
+EIGEN_DEVICE_FUNC inline const CwiseSqrtReturnType cwiseSqrt() const { return CwiseSqrtReturnType(derived()); }
 
 /// \returns an expression of the coefficient-wise cube root of *this.
 ///
@@ -51,7 +64,7 @@ EIGEN_DOC_UNARY_ADDONS(cwiseCbrt, cube - root)
 ///
 /// \sa cwiseSqrt(), cwiseSquare(), cwisePow()
 ///
-EIGEN_MAKE_CWISE_UNARY_OP(cwiseCbrt, internal::scalar_cbrt_op, CwiseCbrtReturnType)
+EIGEN_DEVICE_FUNC inline const CwiseCbrtReturnType cwiseCbrt() const { return CwiseCbrtReturnType(derived()); }
 
 /// \returns an expression of the coefficient-wise square of *this.
 ///
@@ -59,7 +72,7 @@ EIGEN_DOC_UNARY_ADDONS(cwiseSquare, square)
 ///
 /// \sa cwisePow(), cwiseSqrt(), cwiseCbrt()
 ///
-EIGEN_MAKE_CWISE_UNARY_OP(cwiseSquare, internal::scalar_square_op, CwiseSquareReturnType)
+EIGEN_DEVICE_FUNC inline const CwiseSquareReturnType cwiseSquare() const { return CwiseSquareReturnType(derived()); }
 
 /// \returns an expression of the coefficient-wise signum of *this.
 ///
@@ -68,7 +81,7 @@ EIGEN_MAKE_CWISE_UNARY_OP(cwiseSquare, internal::scalar_square_op, CwiseSquareRe
 ///
 EIGEN_DOC_UNARY_ADDONS(cwiseSign, sign function)
 ///
-EIGEN_MAKE_CWISE_UNARY_OP(cwiseSign, internal::scalar_sign_op, CwiseSignReturnType)
+EIGEN_DEVICE_FUNC inline const CwiseSignReturnType cwiseSign() const { return CwiseSignReturnType(derived()); }
 
 /// \returns an expression of the coefficient-wise inverse of *this.
 ///
@@ -79,7 +92,7 @@ EIGEN_DOC_UNARY_ADDONS(cwiseInverse, inverse)
 ///
 /// \sa cwiseProduct()
 ///
-EIGEN_MAKE_CWISE_UNARY_OP(cwiseInverse, internal::scalar_inverse_op, CwiseInverseReturnType)
+EIGEN_DEVICE_FUNC inline const CwiseInverseReturnType cwiseInverse() const { return CwiseInverseReturnType(derived()); }
 
 /// \returns an expression of the coefficient-wise phase angle of \c *this
 ///
@@ -88,9 +101,11 @@ EIGEN_MAKE_CWISE_UNARY_OP(cwiseInverse, internal::scalar_inverse_op, CwiseInvers
 ///
 EIGEN_DOC_UNARY_ADDONS(cwiseArg, arg)
 
-EIGEN_MAKE_CWISE_UNARY_OP(cwiseArg, internal::scalar_arg_op, CwiseArgReturnType)
+EIGEN_DEVICE_FUNC inline const CwiseArgReturnType cwiseArg() const { return CwiseArgReturnType(derived()); }
 
-EIGEN_MAKE_CWISE_UNARY_OP(cwiseCArg, internal::scalar_carg_op, CwiseCArgReturnType)
+EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const CwiseCArgReturnType cwiseCArg() const {
+  return CwiseCArgReturnType(derived());
+}
 
 template <typename ScalarExponent>
 using CwisePowReturnType =
@@ -98,7 +113,6 @@ using CwisePowReturnType =
                      CwiseUnaryOp<internal::scalar_unary_pow_op<Scalar, ScalarExponent>, const Derived>>;
 
 template <typename ScalarExponent>
-EIGEN_DEVICE_FUNC constexpr inline const CwisePowReturnType<ScalarExponent> cwisePow(
-    const ScalarExponent& exponent) const {
+EIGEN_DEVICE_FUNC inline const CwisePowReturnType<ScalarExponent> cwisePow(const ScalarExponent& exponent) const {
   return CwisePowReturnType<ScalarExponent>(derived(), internal::scalar_unary_pow_op<Scalar, ScalarExponent>(exponent));
 }

@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_SPARSESOLVERBASE_H
 #define EIGEN_SPARSESOLVERBASE_H
@@ -26,7 +25,7 @@ template <typename Decomposition, typename Rhs, typename Dest>
 std::enable_if_t<Rhs::ColsAtCompileTime != 1 && Dest::ColsAtCompileTime != 1> solve_sparse_through_dense_panels(
     const Decomposition& dec, const Rhs& rhs, Dest& dest) {
   EIGEN_STATIC_ASSERT((Dest::Flags & RowMajorBit) == 0, THIS_METHOD_IS_ONLY_FOR_COLUMN_MAJOR_MATRICES);
-  using DestScalar = typename Dest::Scalar;
+  typedef typename Dest::Scalar DestScalar;
   // we process the sparse rhs per block of NbColsAtOnce columns temporarily stored into a dense matrix.
   static const Index NbColsAtOnce = 4;
   Index rhsCols = rhs.cols();
@@ -47,7 +46,7 @@ std::enable_if_t<Rhs::ColsAtCompileTime != 1 && Dest::ColsAtCompileTime != 1> so
 template <typename Decomposition, typename Rhs, typename Dest>
 std::enable_if_t<Rhs::ColsAtCompileTime == 1 || Dest::ColsAtCompileTime == 1> solve_sparse_through_dense_panels(
     const Decomposition& dec, const Rhs& rhs, Dest& dest) {
-  using DestScalar = typename Dest::Scalar;
+  typedef typename Dest::Scalar DestScalar;
   Index size = rhs.rows();
   Eigen::Matrix<DestScalar, Dynamic, 1> rhs_dense(rhs);
   Eigen::Matrix<DestScalar, Dynamic, 1> dest_dense(size);
@@ -65,17 +64,14 @@ std::enable_if_t<Rhs::ColsAtCompileTime == 1 || Dest::ColsAtCompileTime == 1> so
  *
  */
 template <typename Derived>
-class SparseSolverBase {
+class SparseSolverBase : internal::noncopyable {
  public:
   /** Default constructor */
-  SparseSolverBase() = default;
+  SparseSolverBase() : m_isInitialized(false) {}
 
-  SparseSolverBase(const SparseSolverBase&) = delete;
-  SparseSolverBase& operator=(const SparseSolverBase&) = delete;
+  SparseSolverBase(SparseSolverBase&& other) : internal::noncopyable{}, m_isInitialized{other.m_isInitialized} {}
 
-  SparseSolverBase(SparseSolverBase&& other) : m_isInitialized{other.m_isInitialized} {}
-
-  ~SparseSolverBase() = default;
+  ~SparseSolverBase() {}
 
   Derived& derived() { return *static_cast<Derived*>(this); }
   const Derived& derived() const { return *static_cast<const Derived*>(this); }
@@ -85,7 +81,7 @@ class SparseSolverBase {
    * \sa compute()
    */
   template <typename Rhs>
-  inline Solve<Derived, Rhs> solve(const MatrixBase<Rhs>& b) const {
+  inline const Solve<Derived, Rhs> solve(const MatrixBase<Rhs>& b) const {
     eigen_assert(m_isInitialized && "Solver is not initialized.");
     eigen_assert(derived().rows() == b.rows() && "solve(): invalid number of rows of the right hand side matrix b");
     return Solve<Derived, Rhs>(derived(), b.derived());
@@ -96,7 +92,7 @@ class SparseSolverBase {
    * \sa compute()
    */
   template <typename Rhs>
-  inline Solve<Derived, Rhs> solve(const SparseMatrixBase<Rhs>& b) const {
+  inline const Solve<Derived, Rhs> solve(const SparseMatrixBase<Rhs>& b) const {
     eigen_assert(m_isInitialized && "Solver is not initialized.");
     eigen_assert(derived().rows() == b.rows() && "solve(): invalid number of rows of the right hand side matrix b");
     return Solve<Derived, Rhs>(derived(), b.derived());
@@ -111,7 +107,7 @@ class SparseSolverBase {
 #endif  // EIGEN_PARSED_BY_DOXYGEN
 
  protected:
-  mutable bool m_isInitialized = false;
+  mutable bool m_isInitialized;
 };
 
 }  // end namespace Eigen

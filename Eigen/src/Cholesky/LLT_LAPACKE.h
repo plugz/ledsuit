@@ -29,7 +29,6 @@
  *     LLt decomposition based on LAPACKE_?potrf function.
  ********************************************************************************
 */
-// SPDX-License-Identifier: BSD-3-Clause
 
 #ifndef EIGEN_LLT_LAPACKE_H
 #define EIGEN_LLT_LAPACKE_H
@@ -83,7 +82,7 @@ struct lapacke_llt {
     lapack_int size = to_lapack(m.rows());
     lapack_int matrix_order = lapack_storage_of(m);
     constexpr char uplo = Mode == Upper ? 'U' : 'L';
-    Scalar *a = &m.coeffRef(0, 0);
+    Scalar *a = &(m.coeffRef(0, 0));
     lapack_int lda = to_lapack(m.outerStride());
 
     lapack_int info = potrf(matrix_order, uplo, size, to_lapack(a), lda);
@@ -97,6 +96,7 @@ struct lapacke_llt {
   }
 };
 }  // namespace lapacke_helpers
+// end namespace lapacke_helpers
 
 /*
  * Here, we just put the generic implementation from lapacke_llt into a full specialization of the llt_inplace

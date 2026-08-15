@@ -7,7 +7,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_PARAMETRIZEDLINE_H
 #define EIGEN_PARAMETRIZEDLINE_H
@@ -26,8 +25,6 @@ namespace Eigen {
  * A parametrized line is defined by an origin point \f$ \mathbf{o} \f$ and a unit
  * direction vector \f$ \mathbf{d} \f$ such that the line corresponds to
  * the set \f$ l(t) = \mathbf{o} + t \mathbf{d} \f$, \f$ t \in \mathbf{R} \f$.
- * The origin is part of the parametrization: two ParametrizedLine objects may
- * describe the same geometric line while using different origins.
  *
  * \tparam Scalar_ the scalar type, i.e., the type of the coefficients
  * \tparam AmbientDim_ the dimension of the ambient space, can be a compile time value or Dynamic.
@@ -37,10 +34,10 @@ class ParametrizedLine {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF_VECTORIZABLE_FIXED_SIZE(Scalar_, AmbientDim_)
   enum { AmbientDimAtCompileTime = AmbientDim_, Options = Options_ };
-  using Scalar = Scalar_;
-  using RealScalar = typename NumTraits<Scalar>::Real;
-  using Index = Eigen::Index;  ///< \deprecated since Eigen 3.3
-  using VectorType = Matrix<Scalar, AmbientDimAtCompileTime, 1, Options>;
+  typedef Scalar_ Scalar;
+  typedef typename NumTraits<Scalar>::Real RealScalar;
+  typedef Eigen::Index Index;  ///< \deprecated since Eigen 3.3
+  typedef Matrix<Scalar, AmbientDimAtCompileTime, 1, Options> VectorType;
 
   /** Default constructor without initialization */
   EIGEN_DEVICE_FUNC inline ParametrizedLine() {}
@@ -54,7 +51,6 @@ class ParametrizedLine {
   EIGEN_DEVICE_FUNC inline explicit ParametrizedLine(Index _dim) : m_origin(_dim), m_direction(_dim) {}
 
   /** Initializes a parametrized line of direction \a direction and origin \a origin.
-   * \warning the origin is part of the parametrization and is not canonicalized.
    * \warning the vector direction is assumed to be normalized.
    */
   EIGEN_DEVICE_FUNC ParametrizedLine(const VectorType& origin, const VectorType& direction)
@@ -67,6 +63,8 @@ class ParametrizedLine {
   EIGEN_DEVICE_FUNC static inline ParametrizedLine Through(const VectorType& p0, const VectorType& p1) {
     return ParametrizedLine(p0, (p1 - p0).normalized());
   }
+
+  EIGEN_DEVICE_FUNC ~ParametrizedLine() {}
 
   /** \returns the dimension in which the line holds */
   EIGEN_DEVICE_FUNC inline Index dim() const { return m_direction.size(); }
@@ -169,9 +167,6 @@ class ParametrizedLine {
   /** \returns \c true if \c *this is approximately equal to \a other, within the precision
    * determined by \a prec.
    *
-   * \note This compares both origins and directions. Lines that represent the same set of
-   * points but use different origins are not considered approximately equal by this method.
-   *
    * \sa MatrixBase::isApprox() */
   EIGEN_DEVICE_FUNC bool isApprox(const ParametrizedLine& other, const typename NumTraits<Scalar>::Real& prec =
                                                                      NumTraits<Scalar>::dummy_precision()) const {
@@ -200,7 +195,7 @@ EIGEN_DEVICE_FUNC inline ParametrizedLine<Scalar_, AmbientDim_, Options_>::Param
 template <typename Scalar_, int AmbientDim_, int Options_>
 EIGEN_DEVICE_FUNC inline typename ParametrizedLine<Scalar_, AmbientDim_, Options_>::VectorType
 ParametrizedLine<Scalar_, AmbientDim_, Options_>::pointAt(const Scalar_& t) const {
-  return origin() + direction() * t;
+  return origin() + (direction() * t);
 }
 
 /** \returns the parameter value of the intersection between \c *this and the given \a hyperplane

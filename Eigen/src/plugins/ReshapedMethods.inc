@@ -1,5 +1,3 @@
-// SPDX-FileCopyrightText: The Eigen Authors
-// SPDX-License-Identifier: MPL-2.0
 
 #ifdef EIGEN_PARSED_BY_DOXYGEN
 
@@ -17,7 +15,7 @@
 /// Output: \verbinclude MatrixBase_reshaped_int_int.out
 ///
 /// The number of rows \a nRows and columns \a nCols can also be specified at compile-time by passing Eigen::fix<N>,
-/// or Eigen::fix<N>(n) as arguments. In the latter case, \c n plays the role of a runtime fallback value in case \c N
+/// or Eigen::fix<N>(n) as arguments. In the later case, \c n plays the role of a runtime fallback value in case \c N
 /// equals Eigen::Dynamic. Here is an example with a fixed number of rows and columns: \include
 /// MatrixBase_reshaped_fixed.cpp Output: \verbinclude MatrixBase_reshaped_fixed.out
 ///
@@ -29,11 +27,11 @@
 /// \sa class Reshaped, fix, fix<N>(int)
 ///
 template <int Order = ColMajor, typename NRowsType, typename NColsType>
-EIGEN_DEVICE_FUNC constexpr inline Reshaped<Derived, ...> reshaped(NRowsType nRows, NColsType nCols);
+EIGEN_DEVICE_FUNC inline Reshaped<Derived, ...> reshaped(NRowsType nRows, NColsType nCols);
 
 /// This is the const version of reshaped(NRowsType,NColsType).
 template <int Order = ColMajor, typename NRowsType, typename NColsType>
-EIGEN_DEVICE_FUNC constexpr inline const Reshaped<const Derived, ...> reshaped(NRowsType nRows, NColsType nCols) const;
+EIGEN_DEVICE_FUNC inline const Reshaped<const Derived, ...> reshaped(NRowsType nRows, NColsType nCols) const;
 
 /// \returns an expression of \c *this with columns (or rows) stacked to a linear column vector
 ///
@@ -41,7 +39,7 @@ EIGEN_DEVICE_FUNC constexpr inline const Reshaped<const Derived, ...> reshaped(N
 /// row-major-order (RowMajor),
 ///               or follows the \em natural order of the nested expression (AutoOrder). The default is ColMajor.
 ///
-/// This overload is essentially a shortcut for `A.reshaped<Order>(AutoSize,fix<1>)`.
+/// This overloads is essentially a shortcut for `A.reshaped<Order>(AutoSize,fix<1>)`.
 ///
 /// - If `Order==ColMajor` (the default), then it returns a column-vector from the stacked columns of \c *this.
 /// - If `Order==RowMajor`, then it returns a column-vector from the stacked rows of \c *this.
@@ -58,11 +56,11 @@ EIGEN_DEVICE_FUNC constexpr inline const Reshaped<const Derived, ...> reshaped(N
 /// \sa reshaped(NRowsType,NColsType), class Reshaped
 ///
 template <int Order = ColMajor>
-EIGEN_DEVICE_FUNC constexpr inline Reshaped<Derived, ...> reshaped();
+EIGEN_DEVICE_FUNC inline Reshaped<Derived, ...> reshaped();
 
 /// This is the const version of reshaped().
 template <int Order = ColMajor>
-EIGEN_DEVICE_FUNC constexpr inline const Reshaped<const Derived, ...> reshaped() const;
+EIGEN_DEVICE_FUNC inline const Reshaped<const Derived, ...> reshaped() const;
 
 #else
 
@@ -81,7 +79,7 @@ EIGEN_DEVICE_FUNC constexpr inline const Reshaped<const Derived, ...> reshaped()
 #endif
 
 template <typename NRowsType, typename NColsType>
-EIGEN_DEVICE_FUNC constexpr inline Reshaped<
+EIGEN_DEVICE_FUNC inline Reshaped<
     EIGEN_RESHAPED_METHOD_CONST Derived,
     internal::get_compiletime_reshape_size<NRowsType, NColsType, SizeAtCompileTime>::value,
     internal::get_compiletime_reshape_size<NColsType, NRowsType, SizeAtCompileTime>::value>
@@ -94,7 +92,7 @@ reshaped(NRowsType nRows, NColsType nCols) EIGEN_RESHAPED_METHOD_CONST {
 }
 
 template <int Order, typename NRowsType, typename NColsType>
-EIGEN_DEVICE_FUNC constexpr inline Reshaped<
+EIGEN_DEVICE_FUNC inline Reshaped<
     EIGEN_RESHAPED_METHOD_CONST Derived,
     internal::get_compiletime_reshape_size<NRowsType, NColsType, SizeAtCompileTime>::value,
     internal::get_compiletime_reshape_size<NColsType, NRowsType, SizeAtCompileTime>::value,
@@ -110,14 +108,14 @@ reshaped(NRowsType nRows, NColsType nCols) EIGEN_RESHAPED_METHOD_CONST {
 
 // Views as linear vectors
 
-EIGEN_DEVICE_FUNC constexpr inline Reshaped<EIGEN_RESHAPED_METHOD_CONST Derived, SizeAtCompileTime, 1> reshaped()
+EIGEN_DEVICE_FUNC inline Reshaped<EIGEN_RESHAPED_METHOD_CONST Derived, SizeAtCompileTime, 1> reshaped()
     EIGEN_RESHAPED_METHOD_CONST {
   return Reshaped<EIGEN_RESHAPED_METHOD_CONST Derived, SizeAtCompileTime, 1>(derived(), size(), 1);
 }
 
 template <int Order>
-EIGEN_DEVICE_FUNC constexpr inline Reshaped<EIGEN_RESHAPED_METHOD_CONST Derived, SizeAtCompileTime, 1,
-                                            internal::get_compiletime_reshape_order(Flags, Order)>
+EIGEN_DEVICE_FUNC inline Reshaped<EIGEN_RESHAPED_METHOD_CONST Derived, SizeAtCompileTime, 1,
+                                  internal::get_compiletime_reshape_order(Flags, Order)>
 reshaped() EIGEN_RESHAPED_METHOD_CONST {
   EIGEN_STATIC_ASSERT(Order == RowMajor || Order == ColMajor || Order == AutoOrder, INVALID_TEMPLATE_PARAMETER);
   return Reshaped<EIGEN_RESHAPED_METHOD_CONST Derived, SizeAtCompileTime, 1,

@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_SPARSEUTIL_H
 #define EIGEN_SPARSEUTIL_H
@@ -51,23 +50,35 @@ class SparseVector;
 
 template <typename MatrixType, unsigned int UpLo>
 class SparseSelfAdjointView;
+template <typename Lhs, typename Rhs>
+class SparseDiagonalProduct;
 template <typename MatrixType>
 class SparseView;
 
+template <typename Lhs, typename Rhs>
+class SparseSparseProduct;
+template <typename Lhs, typename Rhs>
+class SparseTimeDenseProduct;
+template <typename Lhs, typename Rhs>
+class DenseTimeSparseProduct;
+template <typename Lhs, typename Rhs, bool Transpose>
+class SparseDenseOuterProduct;
+
+template <typename Lhs, typename Rhs>
+struct SparseSparseProductReturnType;
+template <typename Lhs, typename Rhs,
+          int InnerSize = internal::min_size_prefer_fixed(internal::traits<Lhs>::ColsAtCompileTime,
+                                                          internal::traits<Rhs>::RowsAtCompileTime)>
+struct DenseSparseProductReturnType;
+
+template <typename Lhs, typename Rhs,
+          int InnerSize = internal::min_size_prefer_fixed(internal::traits<Lhs>::ColsAtCompileTime,
+                                                          internal::traits<Rhs>::RowsAtCompileTime)>
+struct SparseDenseProductReturnType;
 template <typename MatrixType, int UpLo>
 class SparseSymmetricPermutationProduct;
 
 namespace internal {
-
-/** \internal
- * Compile-time test for whether a sparse expression exposes its storage directly
- * through outerIndexPtr() / innerIndexPtr() / valuePtr() / innerNonZeroPtr()
- * (the \ref CompressedAccessBit contract: SparseMatrix, SparseVector,
- * Ref<Sparse>, Map<SparseMatrix>, ...). Such expressions can drive raw-pointer
- * fast paths; anything else must be walked via InnerIterator.
- */
-template <typename Derived>
-struct has_compressed_access : bool_constant<(int(traits<Derived>::Flags) & CompressedAccessBit) != 0> {};
 
 template <typename T, int Rows, int Cols, int Flags>
 struct sparse_eval;
@@ -78,49 +89,49 @@ struct eval<T, Sparse> : sparse_eval<T, traits<T>::RowsAtCompileTime, traits<T>:
 
 template <typename T, int Cols, int Flags>
 struct sparse_eval<T, 1, Cols, Flags> {
-  using Scalar_ = typename traits<T>::Scalar;
-  using StorageIndex_ = typename traits<T>::StorageIndex;
+  typedef typename traits<T>::Scalar Scalar_;
+  typedef typename traits<T>::StorageIndex StorageIndex_;
 
  public:
-  using type = SparseVector<Scalar_, RowMajor, StorageIndex_>;
+  typedef SparseVector<Scalar_, RowMajor, StorageIndex_> type;
 };
 
 template <typename T, int Rows, int Flags>
 struct sparse_eval<T, Rows, 1, Flags> {
-  using Scalar_ = typename traits<T>::Scalar;
-  using StorageIndex_ = typename traits<T>::StorageIndex;
+  typedef typename traits<T>::Scalar Scalar_;
+  typedef typename traits<T>::StorageIndex StorageIndex_;
 
  public:
-  using type = SparseVector<Scalar_, ColMajor, StorageIndex_>;
+  typedef SparseVector<Scalar_, ColMajor, StorageIndex_> type;
 };
 
-// TODO: consider unifying with plain_matrix_type<T, Sparse>.
+// TODO this seems almost identical to plain_matrix_type<T, Sparse>
 template <typename T, int Rows, int Cols, int Flags>
 struct sparse_eval {
-  using Scalar_ = typename traits<T>::Scalar;
-  using StorageIndex_ = typename traits<T>::StorageIndex;
+  typedef typename traits<T>::Scalar Scalar_;
+  typedef typename traits<T>::StorageIndex StorageIndex_;
   enum { Options_ = ((Flags & RowMajorBit) == RowMajorBit) ? RowMajor : ColMajor };
 
  public:
-  using type = SparseMatrix<Scalar_, Options_, StorageIndex_>;
+  typedef SparseMatrix<Scalar_, Options_, StorageIndex_> type;
 };
 
 template <typename T, int Flags>
 struct sparse_eval<T, 1, 1, Flags> {
-  using Scalar_ = typename traits<T>::Scalar;
+  typedef typename traits<T>::Scalar Scalar_;
 
  public:
-  using type = Matrix<Scalar_, 1, 1>;
+  typedef Matrix<Scalar_, 1, 1> type;
 };
 
 template <typename T>
 struct plain_matrix_type<T, Sparse> {
-  using Scalar_ = typename traits<T>::Scalar;
-  using StorageIndex_ = typename traits<T>::StorageIndex;
+  typedef typename traits<T>::Scalar Scalar_;
+  typedef typename traits<T>::StorageIndex StorageIndex_;
   enum { Options_ = ((evaluator<T>::Flags & RowMajorBit) == RowMajorBit) ? RowMajor : ColMajor };
 
  public:
-  using type = SparseMatrix<Scalar_, Options_, StorageIndex_>;
+  typedef SparseMatrix<Scalar_, Options_, StorageIndex_> type;
 };
 
 template <typename T>
@@ -129,13 +140,13 @@ struct plain_object_eval<T, Sparse>
 
 template <typename Decomposition, typename RhsType>
 struct solve_traits<Decomposition, RhsType, Sparse> {
-  using PlainObject = typename sparse_eval<RhsType, RhsType::RowsAtCompileTime, RhsType::ColsAtCompileTime,
-                                           traits<RhsType>::Flags>::type;
+  typedef typename sparse_eval<RhsType, RhsType::RowsAtCompileTime, RhsType::ColsAtCompileTime,
+                               traits<RhsType>::Flags>::type PlainObject;
 };
 
 template <typename Derived>
 struct generic_xpr_base<Derived, MatrixXpr, Sparse> {
-  using type = SparseMatrixBase<Derived>;
+  typedef SparseMatrixBase<Derived> type;
 };
 
 struct SparseTriangularShape {
@@ -147,19 +158,19 @@ struct SparseSelfAdjointShape {
 
 template <>
 struct glue_shapes<SparseShape, SelfAdjointShape> {
-  using type = SparseSelfAdjointShape;
+  typedef SparseSelfAdjointShape type;
 };
 template <>
 struct glue_shapes<SparseShape, TriangularShape> {
-  using type = SparseTriangularShape;
+  typedef SparseTriangularShape type;
 };
 
 // return type of SparseCompressedBase::lower_bound;
 struct LowerBoundIndex {
-  LowerBoundIndex() = default;
+  LowerBoundIndex() : value(-1), found(false) {}
   LowerBoundIndex(Index val, bool ok) : value(val), found(ok) {}
-  Index value = -1;
-  bool found = false;
+  Index value;
+  bool found;
 };
 
 }  // end namespace internal
@@ -175,7 +186,7 @@ struct LowerBoundIndex {
 template <typename Scalar, typename StorageIndex = typename SparseMatrix<Scalar>::StorageIndex>
 class Triplet {
  public:
-  Triplet() = default;
+  Triplet() : m_row(0), m_col(0), m_value(0) {}
 
   Triplet(const StorageIndex& i, const StorageIndex& j, const Scalar& v = Scalar(0)) : m_row(i), m_col(j), m_value(v) {}
 
@@ -189,9 +200,8 @@ class Triplet {
   const Scalar& value() const { return m_value; }
 
  protected:
-  StorageIndex m_row = 0;
-  StorageIndex m_col = 0;
-  Scalar m_value = Scalar(0);
+  StorageIndex m_row, m_col;
+  Scalar m_value;
 };
 
 }  // end namespace Eigen

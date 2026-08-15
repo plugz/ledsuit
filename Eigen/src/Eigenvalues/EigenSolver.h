@@ -7,7 +7,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_EIGENSOLVER_H
 #define EIGEN_EIGENSOLVER_H
@@ -69,7 +68,7 @@ template <typename MatrixType_>
 class EigenSolver {
  public:
   /** \brief Synonym for the template parameter \p MatrixType_. */
-  using MatrixType = MatrixType_;
+  typedef MatrixType_ MatrixType;
 
   enum {
     RowsAtCompileTime = MatrixType::RowsAtCompileTime,
@@ -80,9 +79,9 @@ class EigenSolver {
   };
 
   /** \brief Scalar type for matrices of type #MatrixType. */
-  using Scalar = typename MatrixType::Scalar;
-  using RealScalar = typename NumTraits<Scalar>::Real;
-  using Index = Eigen::Index;  ///< \deprecated since Eigen 3.3
+  typedef typename MatrixType::Scalar Scalar;
+  typedef typename NumTraits<Scalar>::Real RealScalar;
+  typedef Eigen::Index Index;  ///< \deprecated since Eigen 3.3
 
   /** \brief Complex scalar type for #MatrixType.
    *
@@ -90,22 +89,23 @@ class EigenSolver {
    * \c float or \c double) and just \c Scalar if #Scalar is
    * complex.
    */
-  using ComplexScalar = internal::make_complex_t<Scalar>;
+  typedef internal::make_complex_t<Scalar> ComplexScalar;
 
   /** \brief Type for vector of eigenvalues as returned by eigenvalues().
    *
    * This is a column vector with entries of type #ComplexScalar.
    * The length of the vector is the size of #MatrixType.
    */
-  using EigenvalueType = Matrix<ComplexScalar, ColsAtCompileTime, 1, Options & ~RowMajor, MaxColsAtCompileTime, 1>;
+  typedef Matrix<ComplexScalar, ColsAtCompileTime, 1, Options & ~RowMajor, MaxColsAtCompileTime, 1> EigenvalueType;
 
   /** \brief Type for matrix of eigenvectors as returned by eigenvectors().
    *
    * This is a square matrix with entries of type #ComplexScalar.
    * The size is the same as the size of #MatrixType.
    */
-  using EigenvectorsType =
-      Matrix<ComplexScalar, RowsAtCompileTime, ColsAtCompileTime, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime>;
+  typedef Matrix<ComplexScalar, RowsAtCompileTime, ColsAtCompileTime, Options, MaxRowsAtCompileTime,
+                 MaxColsAtCompileTime>
+      EigenvectorsType;
 
   /** \brief Default constructor.
    *
@@ -270,7 +270,7 @@ class EigenSolver {
    * (where \f$ n \f$ is the size of the matrix) if \p computeEigenvectors
    * is true, and \f$ 10n^3 \f$ if \p computeEigenvectors is false.
    *
-   * This method reuses the allocated data in the EigenSolver object.
+   * This method reuses of the allocated data in the EigenSolver object.
    *
    * Example: \include EigenSolver_compute.cpp
    * Output: \verbinclude EigenSolver_compute.out
@@ -278,8 +278,7 @@ class EigenSolver {
   template <typename InputType>
   EigenSolver& compute(const EigenBase<InputType>& matrix, bool computeEigenvectors = true);
 
-  /** \returns NumericalIssue if the input contains INF or NaN values or overflow occurred, NoConvergence if the Schur
-   * decomposition did not converge within the maximum number of iterations, and Success otherwise.
+  /** \returns NumericalIssue if the input contains INF or NaN values or overflow occurred. Returns Success otherwise.
    */
   ComputationInfo info() const {
     eigen_assert(m_isInitialized && "EigenSolver is not initialized.");
@@ -293,7 +292,7 @@ class EigenSolver {
   }
 
   /** \brief Returns the maximum number of iterations. */
-  Index getMaxIterations() const { return m_realSchur.getMaxIterations(); }
+  Index getMaxIterations() { return m_realSchur.getMaxIterations(); }
 
  private:
   void doComputeEigenvectors();
@@ -312,7 +311,7 @@ class EigenSolver {
   RealSchur<MatrixType> m_realSchur;
   MatrixType m_matT;
 
-  using ColumnVectorType = Matrix<Scalar, ColsAtCompileTime, 1, Options & ~RowMajor, MaxColsAtCompileTime, 1>;
+  typedef Matrix<Scalar, ColsAtCompileTime, 1, Options & ~RowMajor, MaxColsAtCompileTime, 1> ColumnVectorType;
   ColumnVectorType m_tmp;
 };
 

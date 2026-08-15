@@ -12,7 +12,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_SVDBASE_H
 #define EIGEN_SVDBASE_H
@@ -59,9 +58,9 @@ void check_svd_options_assertions(unsigned int computationOptions, Index rows, I
 
 template <typename Derived>
 struct traits<SVDBase<Derived> > : traits<Derived> {
-  using XprKind = MatrixXpr;
-  using StorageKind = SolverStorage;
-  using StorageIndex = int;
+  typedef MatrixXpr XprKind;
+  typedef SolverStorage StorageKind;
+  typedef int StorageIndex;
   enum { Flags = 0 };
 };
 
@@ -122,10 +121,10 @@ class SVDBase : public SolverBase<SVDBase<Derived> > {
   template <typename Derived_>
   friend struct internal::solve_assertion;
 
-  using MatrixType = typename internal::traits<Derived>::MatrixType;
-  using Scalar = typename MatrixType::Scalar;
-  using RealScalar = typename NumTraits<typename MatrixType::Scalar>::Real;
-  using StorageIndex = typename Eigen::internal::traits<SVDBase>::StorageIndex;
+  typedef typename internal::traits<Derived>::MatrixType MatrixType;
+  typedef typename MatrixType::Scalar Scalar;
+  typedef typename NumTraits<typename MatrixType::Scalar>::Real RealScalar;
+  typedef typename Eigen::internal::traits<SVDBase>::StorageIndex StorageIndex;
 
   static constexpr bool ShouldComputeFullU = internal::traits<Derived>::ShouldComputeFullU;
   static constexpr bool ShouldComputeThinU = internal::traits<Derived>::ShouldComputeThinU;
@@ -149,14 +148,14 @@ class SVDBase : public SolverBase<SVDBase<Derived> > {
   EIGEN_STATIC_ASSERT(!(ShouldComputeFullU && ShouldComputeThinU), "SVDBase: Cannot request both full and thin U")
   EIGEN_STATIC_ASSERT(!(ShouldComputeFullV && ShouldComputeThinV), "SVDBase: Cannot request both full and thin V")
 
-  using MatrixUType =
+  typedef
       typename internal::make_proper_matrix_type<Scalar, RowsAtCompileTime, MatrixUColsAtCompileTime, MatrixOptions,
-                                                 MaxRowsAtCompileTime, MatrixUMaxColsAtCompileTime>::type;
-  using MatrixVType =
+                                                 MaxRowsAtCompileTime, MatrixUMaxColsAtCompileTime>::type MatrixUType;
+  typedef
       typename internal::make_proper_matrix_type<Scalar, ColsAtCompileTime, MatrixVColsAtCompileTime, MatrixOptions,
-                                                 MaxColsAtCompileTime, MatrixVMaxColsAtCompileTime>::type;
+                                                 MaxColsAtCompileTime, MatrixVMaxColsAtCompileTime>::type MatrixVType;
 
-  using SingularValuesType = typename internal::plain_diag_type<MatrixType, RealScalar>::type;
+  typedef typename internal::plain_diag_type<MatrixType, RealScalar>::type SingularValuesType;
 
   Derived& derived() { return *static_cast<Derived*>(this); }
   const Derived& derived() const { return *static_cast<const Derived*>(this); }
@@ -231,7 +230,7 @@ class SVDBase : public SolverBase<SVDBase<Derived> > {
    * This is not used for the SVD decomposition itself.
    *
    * When it needs to get the threshold value, Eigen calls threshold().
-   * The default is \c NumTraits<Scalar>::epsilon() scaled by the number of singular values, \c max(1,min(rows,cols)).
+   * The default is \c NumTraits<Scalar>::epsilon()
    *
    * \param threshold The new value to use as the threshold.
    *
@@ -291,7 +290,7 @@ class SVDBase : public SolverBase<SVDBase<Derived> > {
    * A x - b \Vert \f$.
    */
   template <typename Rhs>
-  inline Solve<Derived, Rhs> solve(const MatrixBase<Rhs>& b) const;
+  inline const Solve<Derived, Rhs> solve(const MatrixBase<Rhs>& b) const;
 #endif
 
   /** \brief Reports whether previous computation was successful.
@@ -424,12 +423,10 @@ bool SVDBase<Derived>::allocate(Index rows, Index cols, unsigned int computation
 
   m_diagSize.setValue(numext::mini(m_rows.value(), m_cols.value()));
   m_singularValues.resize(m_diagSize.value());
-  EIGEN_IF_CONSTEXPR (RowsAtCompileTime == Dynamic) {
+  if (RowsAtCompileTime == Dynamic)
     m_matrixU.resize(m_rows.value(), m_computeFullU ? m_rows.value() : m_computeThinU ? m_diagSize.value() : 0);
-  }
-  EIGEN_IF_CONSTEXPR (ColsAtCompileTime == Dynamic) {
+  if (ColsAtCompileTime == Dynamic)
     m_matrixV.resize(m_cols.value(), m_computeFullV ? m_cols.value() : m_computeThinV ? m_diagSize.value() : 0);
-  }
 
   return false;
 }

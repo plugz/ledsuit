@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_LEAST_SQUARE_CONJUGATE_GRADIENT_H
 #define EIGEN_LEAST_SQUARE_CONJUGATE_GRADIENT_H
@@ -31,10 +30,11 @@ template <typename MatrixType, typename Rhs, typename Dest, typename Preconditio
 EIGEN_DONT_INLINE void least_square_conjugate_gradient(const MatrixType& mat, const Rhs& rhs, Dest& x,
                                                        const Preconditioner& precond, Index& iters,
                                                        typename Dest::RealScalar& tol_error) {
+  using std::abs;
   using std::sqrt;
-  using RealScalar = typename Dest::RealScalar;
-  using Scalar = typename Dest::Scalar;
-  using VectorType = Matrix<Scalar, Dynamic, 1>;
+  typedef typename Dest::RealScalar RealScalar;
+  typedef typename Dest::Scalar Scalar;
+  typedef Matrix<Scalar, Dynamic, 1> VectorType;
 
   RealScalar tol = tol_error;
   Index maxIters = iters;
@@ -43,27 +43,21 @@ EIGEN_DONT_INLINE void least_square_conjugate_gradient(const MatrixType& mat, co
 
   VectorType residual = rhs - mat * x;
   VectorType normal_residual = mat.adjoint() * residual;
-  VectorType normal_rhs = mat.adjoint() * rhs;
 
-  RealScalar rhsNorm = normal_rhs.stableNorm();
-  if (rhsNorm == 0) {
+  RealScalar rhsNorm2 = (mat.adjoint() * rhs).squaredNorm();
+  if (rhsNorm2 == 0) {
     x.setZero();
     iters = 0;
     tol_error = 0;
     return;
   }
-  RealScalar threshold = tol * rhsNorm;
-  RealScalar residualNorm = normal_residual.stableNorm();
-  if (residualNorm == 0 || residualNorm < threshold) {
+  RealScalar threshold = tol * tol * rhsNorm2;
+  RealScalar residualNorm2 = normal_residual.squaredNorm();
+  if (residualNorm2 < threshold) {
     iters = 0;
-    tol_error = residualNorm / rhsNorm;
+    tol_error = sqrt(residualNorm2 / rhsNorm2);
     return;
   }
-
-  // Keep the quadratic recurrence terms representable for very small or large residuals.
-  const RealScalar residualScale = internal::iterative_solver_scaling_factor(residualNorm);
-  normal_residual /= residualScale;
-  threshold /= residualScale;
 
   VectorType p(n);
   p = precond.solve(normal_residual);  // initial search direction
@@ -75,13 +69,12 @@ EIGEN_DONT_INLINE void least_square_conjugate_gradient(const MatrixType& mat, co
     tmp.noalias() = mat * p;
 
     Scalar alpha = absNew / tmp.squaredNorm();             // the amount we travel on dir
-    x += (residualScale * alpha) * p;                      // update solution
-    residual -= (residualScale * alpha) * tmp;             // update residual
+    x += alpha * p;                                        // update solution
+    residual -= alpha * tmp;                               // update residual
     normal_residual.noalias() = mat.adjoint() * residual;  // update residual of the normal equation
-    normal_residual /= residualScale;
 
-    residualNorm = normal_residual.stableNorm();
-    if (residualNorm < threshold) break;
+    residualNorm2 = normal_residual.squaredNorm();
+    if (residualNorm2 < threshold) break;
 
     z = precond.solve(normal_residual);  // approximately solve for "A'A z = normal_residual"
 
@@ -91,7 +84,7 @@ EIGEN_DONT_INLINE void least_square_conjugate_gradient(const MatrixType& mat, co
     p = z + beta * p;                   // update search direction
     i++;
   }
-  tol_error = residualNorm / (rhsNorm / residualScale);
+  tol_error = sqrt(residualNorm2 / rhsNorm2);
   iters = i;
 }
 
@@ -105,8 +98,8 @@ namespace internal {
 
 template <typename MatrixType_, typename Preconditioner_>
 struct traits<LeastSquaresConjugateGradient<MatrixType_, Preconditioner_> > {
-  using MatrixType = MatrixType_;
-  using Preconditioner = Preconditioner_;
+  typedef MatrixType_ MatrixType;
+  typedef Preconditioner_ Preconditioner;
 };
 
 }  // namespace internal
@@ -126,8 +119,8 @@ struct traits<LeastSquaresConjugateGradient<MatrixType_, Preconditioner_> > {
   * \implsparsesolverconcept
   *
   * The maximal number of iterations and tolerance value can be controlled via the setMaxIterations()
-  * and setTolerance() methods. The defaults are twice the number of columns of the matrix for the maximal
-  * number of iterations and NumTraits<Scalar>::epsilon() for the tolerance.
+  * and setTolerance() methods. The defaults are the size of the problem for the maximal number of iterations
+  * and NumTraits<Scalar>::epsilon() for the tolerance.
   *
   * This class can be used as the direct solver classes. Here is a typical usage example:
     \code
@@ -152,8 +145,7 @@ struct traits<LeastSquaresConjugateGradient<MatrixType_, Preconditioner_> > {
 template <typename MatrixType_, typename Preconditioner_>
 class LeastSquaresConjugateGradient
     : public IterativeSolverBase<LeastSquaresConjugateGradient<MatrixType_, Preconditioner_> > {
- protected:
-  using Base = IterativeSolverBase<LeastSquaresConjugateGradient>;
+  typedef IterativeSolverBase<LeastSquaresConjugateGradient> Base;
   using Base::m_error;
   using Base::m_info;
   using Base::m_isInitialized;
@@ -161,10 +153,10 @@ class LeastSquaresConjugateGradient
   using Base::matrix;
 
  public:
-  using MatrixType = MatrixType_;
-  using Scalar = typename MatrixType::Scalar;
-  using RealScalar = typename MatrixType::RealScalar;
-  using Preconditioner = Preconditioner_;
+  typedef MatrixType_ MatrixType;
+  typedef typename MatrixType::Scalar Scalar;
+  typedef typename MatrixType::RealScalar RealScalar;
+  typedef Preconditioner_ Preconditioner;
 
  public:
   /** Default constructor. */
@@ -182,6 +174,8 @@ class LeastSquaresConjugateGradient
    */
   template <typename MatrixDerived>
   explicit LeastSquaresConjugateGradient(const EigenBase<MatrixDerived>& A) : Base(A.derived()) {}
+
+  ~LeastSquaresConjugateGradient() {}
 
   /** \internal */
   template <typename Rhs, typename Dest>

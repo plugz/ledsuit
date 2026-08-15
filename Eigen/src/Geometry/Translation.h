@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_TRANSLATION_H
 #define EIGEN_TRANSLATION_H
@@ -23,7 +22,7 @@ namespace Eigen {
  * \brief Represents a translation transformation
  *
  * \tparam Scalar_ the scalar type, i.e., the type of the coefficients.
- * \tparam Dim_ the dimension of the space, can be a compile time value or Dynamic
+ * \tparam Dim_ the  dimension of the space, can be a compile time value or Dynamic
  *
  * \note This class is not aimed to be used to store a translation transformation,
  * but rather to make easier the constructions and updates of Transform objects.
@@ -37,15 +36,15 @@ class Translation {
   /** dimension of the space */
   enum { Dim = Dim_ };
   /** the scalar type of the coefficients */
-  using Scalar = Scalar_;
+  typedef Scalar_ Scalar;
   /** corresponding vector type */
-  using VectorType = Matrix<Scalar, Dim, 1>;
+  typedef Matrix<Scalar, Dim, 1> VectorType;
   /** corresponding linear transformation matrix type */
-  using LinearMatrixType = Matrix<Scalar, Dim, Dim>;
+  typedef Matrix<Scalar, Dim, Dim> LinearMatrixType;
   /** corresponding affine transformation type */
-  using AffineTransformType = Transform<Scalar, Dim, Affine>;
+  typedef Transform<Scalar, Dim, Affine> AffineTransformType;
   /** corresponding isometric transformation type */
-  using IsometryTransformType = Transform<Scalar, Dim, Isometry>;
+  typedef Transform<Scalar, Dim, Isometry> IsometryTransformType;
 
  protected:
   VectorType m_coeffs;
@@ -89,7 +88,7 @@ class Translation {
   EIGEN_DEVICE_FUNC const VectorType& translation() const { return m_coeffs; }
   EIGEN_DEVICE_FUNC VectorType& translation() { return m_coeffs; }
 
-  /** Concatenates two translations */
+  /** Concatenates two translation */
   EIGEN_DEVICE_FUNC inline Translation operator*(const Translation& other) const {
     return Translation(m_coeffs + other.m_coeffs);
   }
@@ -108,7 +107,7 @@ class Translation {
   }
 
   /** \returns the concatenation of a linear transformation \a l with the translation \a t */
-  // it's a nightmare to define a templated friend function outside its declaration
+  // its a nightmare to define a templated friend function outside its declaration
   template <typename OtherDerived>
   friend EIGEN_DEVICE_FUNC inline AffineTransformType operator*(const EigenBase<OtherDerived>& linear,
                                                                 const Translation& t) {
@@ -170,10 +169,10 @@ class Translation {
 
 /** \addtogroup Geometry_Module */
 //@{
-using Translation2f = Translation<float, 2>;
-using Translation2d = Translation<double, 2>;
-using Translation3f = Translation<float, 3>;
-using Translation3d = Translation<double, 3>;
+typedef Translation<float, 2> Translation2f;
+typedef Translation<double, 2> Translation2d;
+typedef Translation<float, 3> Translation3f;
+typedef Translation<double, 3> Translation3d;
 //@}
 
 template <typename Scalar, int Dim>

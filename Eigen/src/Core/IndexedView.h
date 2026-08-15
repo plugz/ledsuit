@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_INDEXED_VIEW_H
 #define EIGEN_INDEXED_VIEW_H
@@ -37,16 +36,15 @@ struct traits<IndexedView<XprType, RowIndices, ColIndices>> : traits<XprType> {
     OuterIncr = IsRowMajor ? RowIncr : ColIncr,
 
     HasSameStorageOrderAsXprType = (IsRowMajor == XprTypeIsRowMajor),
-    XprInnerStride = HasSameStorageOrderAsXprType ? int(inner_stride_at_compile_time<XprType>::value)
-                                                  : int(outer_stride_at_compile_time<XprType>::value),
-    XprOuterstride = HasSameStorageOrderAsXprType ? int(outer_stride_at_compile_time<XprType>::value)
-                                                  : int(inner_stride_at_compile_time<XprType>::value),
+    XprInnerStride = HasSameStorageOrderAsXprType ? int(inner_stride_at_compile_time<XprType>::ret)
+                                                  : int(outer_stride_at_compile_time<XprType>::ret),
+    XprOuterstride = HasSameStorageOrderAsXprType ? int(outer_stride_at_compile_time<XprType>::ret)
+                                                  : int(inner_stride_at_compile_time<XprType>::ret),
 
     InnerSize = XprTypeIsRowMajor ? ColsAtCompileTime : RowsAtCompileTime,
     IsBlockAlike = InnerIncr == 1 && OuterIncr == 1,
-    IsInnerPannel =
-        HasSameStorageOrderAsXprType &&
-        std::is_same<AllRange<InnerSize>, std::conditional_t<XprTypeIsRowMajor, ColIndices, RowIndices>>::value,
+    IsInnerPannel = HasSameStorageOrderAsXprType &&
+                    is_same<AllRange<InnerSize>, std::conditional_t<XprTypeIsRowMajor, ColIndices, RowIndices>>::value,
 
     InnerStrideAtCompileTime =
         InnerIncr < 0 || InnerIncr == DynamicIndex || XprInnerStride == Dynamic || InnerIncr == Undefined
@@ -61,7 +59,7 @@ struct traits<IndexedView<XprType, RowIndices, ColIndices>> : traits<XprType> {
     ReturnAsBlock = (!ReturnAsScalar) && IsBlockAlike,
     ReturnAsIndexedView = (!ReturnAsScalar) && (!ReturnAsBlock),
 
-    // FIXME: we deal with compile-time strides if and only if we have DirectAccessBit flag,
+    // FIXME we deal with compile-time strides if and only if we have DirectAccessBit flag,
     // but this is too strict regarding negative strides...
     DirectAccessMask = (int(InnerIncr) != Undefined && int(OuterIncr) != Undefined && InnerIncr >= 0 && OuterIncr >= 0)
                            ? DirectAccessBit
@@ -73,7 +71,7 @@ struct traits<IndexedView<XprType, RowIndices, ColIndices>> : traits<XprType> {
             FlagsLinearAccessBit
   };
 
-  using BlockType = Block<XprType, RowsAtCompileTime, ColsAtCompileTime, IsInnerPannel>;
+  typedef Block<XprType, RowsAtCompileTime, ColsAtCompileTime, IsInnerPannel> BlockType;
 };
 
 template <typename XprType, typename RowIndices, typename ColIndices, typename StorageKind, bool DirectAccess>
@@ -91,7 +89,7 @@ class IndexedViewImpl;
  * \tparam ColIndices the type of the object defining the sequence of column indices
  *
  * This class represents an expression of a sub-matrix (or sub-vector) defined as the intersection
- * of sub-sets of rows and columns, that are themselves defined by generic sequences of row indices \f$
+ * of sub-sets of rows and columns, that are themself defined by generic sequences of row indices \f$
  * \{r_0,r_1,..r_{m-1}\} \f$ and column indices \f$ \{c_0,c_1,..c_{n-1} \}\f$. Let \f$ A \f$  be the nested matrix, then
  * the resulting matrix \f$ B \f$ has \c m rows and \c n columns, and its entries are given by: \f$ B(i,j) = A(r_i,c_j)
  * \f$.
@@ -125,9 +123,10 @@ class IndexedView
                                        (internal::traits<IndexedView<XprType, RowIndices, ColIndices>>::Flags &
                                         DirectAccessBit) != 0> {
  public:
-  using Base = typename internal::IndexedViewImpl<
+  typedef typename internal::IndexedViewImpl<
       XprType, RowIndices, ColIndices, typename internal::traits<XprType>::StorageKind,
-      (internal::traits<IndexedView<XprType, RowIndices, ColIndices>>::Flags & DirectAccessBit) != 0>;
+      (internal::traits<IndexedView<XprType, RowIndices, ColIndices>>::Flags & DirectAccessBit) != 0>
+      Base;
   EIGEN_GENERIC_PUBLIC_INTERFACE(IndexedView)
   EIGEN_INHERIT_ASSIGNMENT_OPERATORS(IndexedView)
 
@@ -141,10 +140,10 @@ namespace internal {
 template <typename XprType, typename RowIndices, typename ColIndices, typename StorageKind, bool DirectAccess>
 class IndexedViewImpl : public internal::generic_xpr_base<IndexedView<XprType, RowIndices, ColIndices>>::type {
  public:
-  using Base = typename internal::generic_xpr_base<IndexedView<XprType, RowIndices, ColIndices>>::type;
-  using MatrixTypeNested = typename internal::ref_selector<XprType>::non_const_type;
-  using NestedExpression = internal::remove_all_t<XprType>;
-  using Scalar = typename XprType::Scalar;
+  typedef typename internal::generic_xpr_base<IndexedView<XprType, RowIndices, ColIndices>>::type Base;
+  typedef typename internal::ref_selector<XprType>::non_const_type MatrixTypeNested;
+  typedef internal::remove_all_t<XprType> NestedExpression;
+  typedef typename XprType::Scalar Scalar;
 
   EIGEN_INHERIT_ASSIGNMENT_OPERATORS(IndexedViewImpl)
 
@@ -198,13 +197,13 @@ class IndexedViewImpl<XprType, RowIndices, ColIndices, StorageKind, true>
   IndexedViewImpl(XprType& xpr, const T0& rowIndices, const T1& colIndices) : Base(xpr, rowIndices, colIndices) {}
 
   Index rowIncrement() const {
-    EIGEN_IF_CONSTEXPR (traits<Derived>::RowIncr != DynamicIndex && traits<Derived>::RowIncr != Undefined) {
+    if (traits<Derived>::RowIncr != DynamicIndex && traits<Derived>::RowIncr != Undefined) {
       return traits<Derived>::RowIncr;
     }
     return IndexedViewHelper<RowIndices>::incr(this->rowIndices());
   }
   Index colIncrement() const {
-    EIGEN_IF_CONSTEXPR (traits<Derived>::ColIncr != DynamicIndex && traits<Derived>::ColIncr != Undefined) {
+    if (traits<Derived>::ColIncr != DynamicIndex && traits<Derived>::ColIncr != Undefined) {
       return traits<Derived>::ColIncr;
     }
     return IndexedViewHelper<ColIndices>::incr(this->colIndices());
@@ -227,14 +226,14 @@ class IndexedViewImpl<XprType, RowIndices, ColIndices, StorageKind, true>
   }
 
   EIGEN_DEVICE_FUNC constexpr Index innerStride() const noexcept {
-    EIGEN_IF_CONSTEXPR (traits<Derived>::InnerStrideAtCompileTime != Dynamic) {
+    if (traits<Derived>::InnerStrideAtCompileTime != Dynamic) {
       return traits<Derived>::InnerStrideAtCompileTime;
     }
     return innerIncrement() * this->nestedExpression().innerStride();
   }
 
   EIGEN_DEVICE_FUNC constexpr Index outerStride() const noexcept {
-    EIGEN_IF_CONSTEXPR (traits<Derived>::OuterStrideAtCompileTime != Dynamic) {
+    if (traits<Derived>::OuterStrideAtCompileTime != Dynamic) {
       return traits<Derived>::OuterStrideAtCompileTime;
     }
     return outerIncrement() * this->nestedExpression().outerStride();
@@ -244,7 +243,7 @@ class IndexedViewImpl<XprType, RowIndices, ColIndices, StorageKind, true>
 template <typename ArgType, typename RowIndices, typename ColIndices>
 struct unary_evaluator<IndexedView<ArgType, RowIndices, ColIndices>, IndexBased>
     : evaluator_base<IndexedView<ArgType, RowIndices, ColIndices>> {
-  using XprType = IndexedView<ArgType, RowIndices, ColIndices>;
+  typedef IndexedView<ArgType, RowIndices, ColIndices> XprType;
 
   enum {
     CoeffReadCost = evaluator<ArgType>::CoeffReadCost /* TODO + cost of row/col index */,
@@ -260,27 +259,26 @@ struct unary_evaluator<IndexedView<ArgType, RowIndices, ColIndices>, IndexBased>
     Alignment = 0
   };
 
-  EIGEN_DEVICE_FUNC constexpr explicit unary_evaluator(const XprType& xpr)
-      : m_argImpl(xpr.nestedExpression()), m_xpr(xpr) {
+  EIGEN_DEVICE_FUNC explicit unary_evaluator(const XprType& xpr) : m_argImpl(xpr.nestedExpression()), m_xpr(xpr) {
     EIGEN_INTERNAL_CHECK_COST_VALUE(CoeffReadCost);
   }
 
-  using Scalar = typename XprType::Scalar;
-  using CoeffReturnType = typename XprType::CoeffReturnType;
+  typedef typename XprType::Scalar Scalar;
+  typedef typename XprType::CoeffReturnType CoeffReturnType;
 
-  EIGEN_DEVICE_FUNC constexpr EIGEN_STRONG_INLINE CoeffReturnType coeff(Index row, Index col) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE CoeffReturnType coeff(Index row, Index col) const {
     eigen_assert(m_xpr.rowIndices()[row] >= 0 && m_xpr.rowIndices()[row] < m_xpr.nestedExpression().rows() &&
                  m_xpr.colIndices()[col] >= 0 && m_xpr.colIndices()[col] < m_xpr.nestedExpression().cols());
     return m_argImpl.coeff(m_xpr.rowIndices()[row], m_xpr.colIndices()[col]);
   }
 
-  EIGEN_DEVICE_FUNC constexpr EIGEN_STRONG_INLINE Scalar& coeffRef(Index row, Index col) {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar& coeffRef(Index row, Index col) {
     eigen_assert(m_xpr.rowIndices()[row] >= 0 && m_xpr.rowIndices()[row] < m_xpr.nestedExpression().rows() &&
                  m_xpr.colIndices()[col] >= 0 && m_xpr.colIndices()[col] < m_xpr.nestedExpression().cols());
     return m_argImpl.coeffRef(m_xpr.rowIndices()[row], m_xpr.colIndices()[col]);
   }
 
-  EIGEN_DEVICE_FUNC constexpr EIGEN_STRONG_INLINE Scalar& coeffRef(Index index) {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Scalar& coeffRef(Index index) {
     EIGEN_STATIC_ASSERT_LVALUE(XprType)
     Index row = XprType::RowsAtCompileTime == 1 ? 0 : index;
     Index col = XprType::RowsAtCompileTime == 1 ? index : 0;
@@ -289,7 +287,7 @@ struct unary_evaluator<IndexedView<ArgType, RowIndices, ColIndices>, IndexBased>
     return m_argImpl.coeffRef(m_xpr.rowIndices()[row], m_xpr.colIndices()[col]);
   }
 
-  EIGEN_DEVICE_FUNC constexpr EIGEN_STRONG_INLINE const Scalar& coeffRef(Index index) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const Scalar& coeffRef(Index index) const {
     Index row = XprType::RowsAtCompileTime == 1 ? 0 : index;
     Index col = XprType::RowsAtCompileTime == 1 ? index : 0;
     eigen_assert(m_xpr.rowIndices()[row] >= 0 && m_xpr.rowIndices()[row] < m_xpr.nestedExpression().rows() &&
@@ -297,7 +295,7 @@ struct unary_evaluator<IndexedView<ArgType, RowIndices, ColIndices>, IndexBased>
     return m_argImpl.coeffRef(m_xpr.rowIndices()[row], m_xpr.colIndices()[col]);
   }
 
-  EIGEN_DEVICE_FUNC constexpr EIGEN_STRONG_INLINE const CoeffReturnType coeff(Index index) const {
+  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE const CoeffReturnType coeff(Index index) const {
     Index row = XprType::RowsAtCompileTime == 1 ? 0 : index;
     Index col = XprType::RowsAtCompileTime == 1 ? index : 0;
     eigen_assert(m_xpr.rowIndices()[row] >= 0 && m_xpr.rowIndices()[row] < m_xpr.nestedExpression().rows() &&
@@ -312,7 +310,9 @@ struct unary_evaluator<IndexedView<ArgType, RowIndices, ColIndices>, IndexBased>
 
 // Catch assignments to an IndexedView.
 template <typename ArgType, typename RowIndices, typename ColIndices>
-struct evaluator_assume_aliasing<IndexedView<ArgType, RowIndices, ColIndices>> : std::true_type {};
+struct evaluator_assume_aliasing<IndexedView<ArgType, RowIndices, ColIndices>> {
+  static const bool value = true;
+};
 
 }  // end namespace internal
 

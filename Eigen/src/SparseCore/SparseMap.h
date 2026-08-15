@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_SPARSE_MAP_H
 #define EIGEN_SPARSE_MAP_H
@@ -21,16 +20,16 @@ namespace internal {
 template <typename MatScalar, int MatOptions, typename MatIndex, int Options, typename StrideType>
 struct traits<Map<SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType> >
     : public traits<SparseMatrix<MatScalar, MatOptions, MatIndex> > {
-  using PlainObjectType = SparseMatrix<MatScalar, MatOptions, MatIndex>;
-  using TraitsBase = traits<PlainObjectType>;
+  typedef SparseMatrix<MatScalar, MatOptions, MatIndex> PlainObjectType;
+  typedef traits<PlainObjectType> TraitsBase;
   enum { Flags = TraitsBase::Flags & (~NestByRefBit) };
 };
 
 template <typename MatScalar, int MatOptions, typename MatIndex, int Options, typename StrideType>
 struct traits<Map<const SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType> >
     : public traits<SparseMatrix<MatScalar, MatOptions, MatIndex> > {
-  using PlainObjectType = SparseMatrix<MatScalar, MatOptions, MatIndex>;
-  using TraitsBase = traits<PlainObjectType>;
+  typedef SparseMatrix<MatScalar, MatOptions, MatIndex> PlainObjectType;
+  typedef traits<PlainObjectType> TraitsBase;
   enum { Flags = TraitsBase::Flags & (~(NestByRefBit | LvalueBit)) };
 };
 
@@ -47,16 +46,16 @@ class SparseMapBase;
 template <typename Derived>
 class SparseMapBase<Derived, ReadOnlyAccessors> : public SparseCompressedBase<Derived> {
  public:
-  using Base = SparseCompressedBase<Derived>;
-  using Scalar = typename Base::Scalar;
-  using StorageIndex = typename Base::StorageIndex;
+  typedef SparseCompressedBase<Derived> Base;
+  typedef typename Base::Scalar Scalar;
+  typedef typename Base::StorageIndex StorageIndex;
   enum { IsRowMajor = Base::IsRowMajor };
   using Base::operator=;
 
  protected:
-  using ScalarPointer = std::conditional_t<bool(internal::is_lvalue<Derived>::value), Scalar*, const Scalar*>;
-  using IndexPointer =
-      std::conditional_t<bool(internal::is_lvalue<Derived>::value), StorageIndex*, const StorageIndex*>;
+  typedef std::conditional_t<bool(internal::is_lvalue<Derived>::value), Scalar*, const Scalar*> ScalarPointer;
+  typedef std::conditional_t<bool(internal::is_lvalue<Derived>::value), StorageIndex*, const StorageIndex*>
+      IndexPointer;
 
   Index m_outerSize;
   Index m_innerSize;
@@ -132,8 +131,11 @@ class SparseMapBase<Derived, ReadOnlyAccessors> : public SparseCompressedBase<De
         m_values(valuePtr),
         m_innerNonZeros(0) {}
 
+  /** Empty destructor */
+  inline ~SparseMapBase() {}
+
  protected:
-  inline SparseMapBase() = default;
+  inline SparseMapBase() {}
 };
 
 /** \ingroup SparseCore_Module
@@ -142,10 +144,12 @@ class SparseMapBase<Derived, ReadOnlyAccessors> : public SparseCompressedBase<De
  */
 template <typename Derived>
 class SparseMapBase<Derived, WriteAccessors> : public SparseMapBase<Derived, ReadOnlyAccessors> {
+  typedef MapBase<Derived, ReadOnlyAccessors> ReadOnlyMapBase;
+
  public:
-  using Base = SparseMapBase<Derived, ReadOnlyAccessors>;
-  using Scalar = typename Base::Scalar;
-  using StorageIndex = typename Base::StorageIndex;
+  typedef SparseMapBase<Derived, ReadOnlyAccessors> Base;
+  typedef typename Base::Scalar Scalar;
+  typedef typename Base::StorageIndex StorageIndex;
   enum { IsRowMajor = Base::IsRowMajor };
 
   using Base::operator=;
@@ -167,13 +171,7 @@ class SparseMapBase<Derived, WriteAccessors> : public SparseMapBase<Derived, Rea
   inline StorageIndex* innerNonZeroPtr() { return Base::m_innerNonZeros; }
   //----------------------------------------
 
-  /** \returns a non-const reference to the value of the matrix at position \a row, \a col
-   *
-   * The element must already exist: unlike SparseMatrix::coeffRef, this function cannot insert a new one because
-   * \c *this does not own the buffers it points to.
-   *
-   * This is a O(log(nnz_j)) operation (binary search).
-   */
+  /** \copydoc SparseMatrix::coeffRef */
   inline Scalar& coeffRef(Index row, Index col) {
     const Index outer = IsRowMajor ? row : col;
     const Index inner = IsRowMajor ? col : row;
@@ -196,8 +194,11 @@ class SparseMapBase<Derived, WriteAccessors> : public SparseMapBase<Derived, Rea
   inline SparseMapBase(Index size, Index nnz, StorageIndex* innerIndexPtr, Scalar* valuePtr)
       : Base(size, nnz, innerIndexPtr, valuePtr) {}
 
+  /** Empty destructor */
+  inline ~SparseMapBase() {}
+
  protected:
-  inline SparseMapBase() = default;
+  inline SparseMapBase() {}
 };
 
 /** \ingroup SparseCore_Module
@@ -219,7 +220,7 @@ class Map<SparseMatrixType> : public SparseMapBase<Derived, WriteAccessors>
 #endif
 {
  public:
-  using Base = SparseMapBase<Map>;
+  typedef SparseMapBase<Map> Base;
   EIGEN_SPARSE_PUBLIC_INTERFACE(Map)
   enum { IsRowMajor = Base::IsRowMajor };
 
@@ -237,13 +238,15 @@ class Map<SparseMatrixType> : public SparseMapBase<Derived, WriteAccessors>
              Scalar* valuePtr, StorageIndex* innerNonZerosPtr = 0)
       : Base(rows, cols, nnz, outerIndexPtr, innerIndexPtr, valuePtr, innerNonZerosPtr) {}
 #ifndef EIGEN_PARSED_BY_DOXYGEN
+  /** Empty destructor */
+  inline ~Map() {}
 };
 
 template <typename MatScalar, int MatOptions, typename MatIndex, int Options, typename StrideType>
 class Map<const SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType>
     : public SparseMapBase<Map<const SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType> > {
  public:
-  using Base = SparseMapBase<Map>;
+  typedef SparseMapBase<Map> Base;
   EIGEN_SPARSE_PUBLIC_INTERFACE(Map)
   enum { IsRowMajor = Base::IsRowMajor };
 
@@ -257,6 +260,9 @@ class Map<const SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideTy
   inline Map(Index rows, Index cols, Index nnz, const StorageIndex* outerIndexPtr, const StorageIndex* innerIndexPtr,
              const Scalar* valuePtr, const StorageIndex* innerNonZerosPtr = 0)
       : Base(rows, cols, nnz, outerIndexPtr, innerIndexPtr, valuePtr, innerNonZerosPtr) {}
+
+  /** Empty destructor */
+  inline ~Map() {}
 };
 
 namespace internal {
@@ -264,19 +270,21 @@ namespace internal {
 template <typename MatScalar, int MatOptions, typename MatIndex, int Options, typename StrideType>
 struct evaluator<Map<SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType> >
     : evaluator<SparseCompressedBase<Map<SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType> > > {
-  using Base = evaluator<SparseCompressedBase<Map<SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType>>>;
-  using XprType = Map<SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType>;
-  evaluator() = default;
+  typedef evaluator<SparseCompressedBase<Map<SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType> > >
+      Base;
+  typedef Map<SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType> XprType;
+  evaluator() : Base() {}
   explicit evaluator(const XprType& mat) : Base(mat) {}
 };
 
 template <typename MatScalar, int MatOptions, typename MatIndex, int Options, typename StrideType>
 struct evaluator<Map<const SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType> >
     : evaluator<SparseCompressedBase<Map<const SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType> > > {
-  using Base =
-      evaluator<SparseCompressedBase<Map<const SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType>>>;
-  using XprType = Map<const SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType>;
-  evaluator() = default;
+  typedef evaluator<
+      SparseCompressedBase<Map<const SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType> > >
+      Base;
+  typedef Map<const SparseMatrix<MatScalar, MatOptions, MatIndex>, Options, StrideType> XprType;
+  evaluator() : Base() {}
   explicit evaluator(const XprType& mat) : Base(mat) {}
 };
 

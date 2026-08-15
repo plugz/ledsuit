@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_SELFADJOINT_PRODUCT_H
 #define EIGEN_SELFADJOINT_PRODUCT_H
@@ -25,104 +24,14 @@ namespace Eigen {
 template <typename Scalar, typename Index, int UpLo, bool ConjLhs, bool ConjRhs>
 struct selfadjoint_rank1_update<Scalar, Index, ColMajor, UpLo, ConjLhs, ConjRhs> {
   static void run(Index size, Scalar* mat, Index stride, const Scalar* vecX, const Scalar* vecY, const Scalar& alpha) {
-    using Packet = typename internal::packet_traits<Scalar>::type;
-    const Index PacketSize = internal::unpacket_traits<Packet>::size;
-
-    internal::conj_if<ConjRhs> cjy;
-    internal::conj_if<ConjLhs> cjx;
-    internal::conj_helper<Packet, Packet, ConjLhs, false> pcj;
-
-    // Process 2 columns at a time to share vecX loads and reduce loop overhead.
-    Index j = 0;
-    for (; j + 1 < size; j += 2) {
-      Scalar s0 = alpha * cjy(vecY[j]);
-      Scalar s1 = alpha * cjy(vecY[j + 1]);
-      Packet ps0 = internal::pset1<Packet>(s0);
-      Packet ps1 = internal::pset1<Packet>(s1);
-
-      EIGEN_IF_CONSTEXPR (UpLo == Lower) {
-        Scalar* EIGEN_RESTRICT col0 = mat + stride * j + j;
-        Scalar* EIGEN_RESTRICT col1 = mat + stride * (j + 1) + (j + 1);
-
-        // Diagonal and cross-diagonal scalar elements
-        col0[0] += s0 * cjx(vecX[j]);
-        col0[1] += s0 * cjx(vecX[j + 1]);
-        col1[0] += s1 * cjx(vecX[j + 1]);
-
-        // Shared vectorized loop for rows j+2..size-1
-        Index len = size - j - 2;
-        const Scalar* EIGEN_RESTRICT xp = vecX + j + 2;
-        Scalar* EIGEN_RESTRICT d0 = col0 + 2;
-        Scalar* EIGEN_RESTRICT d1 = col1 + 1;
-
-        Index k = 0;
-        Index vectorizedEnd = (len / PacketSize) * PacketSize;
-        for (; k < vectorizedEnd; k += PacketSize) {
-          Packet xi = internal::ploadu<Packet>(xp + k);
-          Packet m0 = internal::ploadu<Packet>(d0 + k);
-          m0 = pcj.pmadd(xi, ps0, m0);
-          internal::pstoreu(d0 + k, m0);
-          Packet m1 = internal::ploadu<Packet>(d1 + k);
-          m1 = pcj.pmadd(xi, ps1, m1);
-          internal::pstoreu(d1 + k, m1);
-        }
-        for (; k < len; ++k) {
-          Scalar cx = cjx(xp[k]);
-          d0[k] += s0 * cx;
-          d1[k] += s1 * cx;
-        }
-      } else {
-        // UpLo == Upper
-        Scalar* EIGEN_RESTRICT col0 = mat + stride * j;
-        Scalar* EIGEN_RESTRICT col1 = mat + stride * (j + 1);
-
-        // Shared vectorized loop for rows 0..j-1
-        const Scalar* EIGEN_RESTRICT xp = vecX;
-        Index len = j;
-        Index k = 0;
-        Index vectorizedEnd = (len / PacketSize) * PacketSize;
-        for (; k < vectorizedEnd; k += PacketSize) {
-          Packet xi = internal::ploadu<Packet>(xp + k);
-          Packet m0 = internal::ploadu<Packet>(col0 + k);
-          Packet m1 = internal::ploadu<Packet>(col1 + k);
-          m0 = pcj.pmadd(xi, ps0, m0);
-          m1 = pcj.pmadd(xi, ps1, m1);
-          internal::pstoreu(col0 + k, m0);
-          internal::pstoreu(col1 + k, m1);
-        }
-        for (; k < len; ++k) {
-          Scalar cx = cjx(xp[k]);
-          col0[k] += s0 * cx;
-          col1[k] += s1 * cx;
-        }
-
-        // Diagonal and cross-diagonal scalar elements
-        col0[j] += s0 * cjx(vecX[j]);
-        col1[j] += s1 * cjx(vecX[j]);
-        col1[j + 1] += s1 * cjx(vecX[j + 1]);
-      }
-    }
-
-    // Handle last column if size is odd
-    if (j < size) {
-      Scalar s = alpha * cjy(vecY[j]);
-      Packet ps = internal::pset1<Packet>(s);
-      Index start = UpLo == Lower ? j : 0;
-      Index len = UpLo == Lower ? size - j : j + 1;
-      Scalar* EIGEN_RESTRICT dst = mat + stride * j + start;
-      const Scalar* EIGEN_RESTRICT xp = vecX + start;
-
-      Index k = 0;
-      Index vectorizedEnd = (len / PacketSize) * PacketSize;
-      for (; k < vectorizedEnd; k += PacketSize) {
-        Packet xi = internal::ploadu<Packet>(xp + k);
-        Packet di = internal::ploadu<Packet>(dst + k);
-        di = pcj.pmadd(xi, ps, di);
-        internal::pstoreu(dst + k, di);
-      }
-      for (; k < len; ++k) {
-        dst[k] += s * cjx(xp[k]);
-      }
+    internal::conj_if<ConjRhs> cj;
+    typedef Map<const Matrix<Scalar, Dynamic, 1> > OtherMap;
+    typedef std::conditional_t<ConjLhs, typename OtherMap::ConjugateReturnType, const OtherMap&> ConjLhsType;
+    for (Index i = 0; i < size; ++i) {
+      Map<Matrix<Scalar, Dynamic, 1> >(mat + stride * i + (UpLo == Lower ? i : 0),
+                                       (UpLo == Lower ? size - i : (i + 1))) +=
+          (alpha * cj(vecY[i])) *
+          ConjLhsType(OtherMap(vecX + (UpLo == Lower ? i : 0), UpLo == Lower ? size - i : (i + 1)));
     }
   }
 };
@@ -141,10 +50,10 @@ struct selfadjoint_product_selector;
 template <typename MatrixType, typename OtherType, int UpLo>
 struct selfadjoint_product_selector<MatrixType, OtherType, UpLo, true> {
   static void run(MatrixType& mat, const OtherType& other, const typename MatrixType::Scalar& alpha) {
-    using Scalar = typename MatrixType::Scalar;
-    using OtherBlasTraits = internal::blas_traits<OtherType>;
-    using ActualOtherType = typename OtherBlasTraits::DirectLinearAccessType;
-    using ActualOtherType_ = internal::remove_all_t<ActualOtherType>;
+    typedef typename MatrixType::Scalar Scalar;
+    typedef internal::blas_traits<OtherType> OtherBlasTraits;
+    typedef typename OtherBlasTraits::DirectLinearAccessType ActualOtherType;
+    typedef internal::remove_all_t<ActualOtherType> ActualOtherType_;
     internal::add_const_on_value_type_t<ActualOtherType> actualOther = OtherBlasTraits::extract(other.derived());
 
     Scalar actualAlpha = alpha * OtherBlasTraits::extractScalarFactor(other.derived());
@@ -161,9 +70,8 @@ struct selfadjoint_product_selector<MatrixType, OtherType, UpLo, true> {
         Scalar, actualOtherPtr, other.size(),
         (UseOtherDirectly ? const_cast<Scalar*>(actualOther.data()) : static_other.data()));
 
-    EIGEN_IF_CONSTEXPR (!UseOtherDirectly) {
+    if (!UseOtherDirectly)
       Map<typename ActualOtherType_::PlainObject>(actualOtherPtr, actualOther.size()) = actualOther;
-    }
 
     selfadjoint_rank1_update<
         Scalar, Index, StorageOrder, UpLo, OtherBlasTraits::NeedToConjugate && NumTraits<Scalar>::IsComplex,
@@ -176,10 +84,10 @@ struct selfadjoint_product_selector<MatrixType, OtherType, UpLo, true> {
 template <typename MatrixType, typename OtherType, int UpLo>
 struct selfadjoint_product_selector<MatrixType, OtherType, UpLo, false> {
   static void run(MatrixType& mat, const OtherType& other, const typename MatrixType::Scalar& alpha) {
-    using Scalar = typename MatrixType::Scalar;
-    using OtherBlasTraits = internal::blas_traits<OtherType>;
-    using ActualOtherType = typename OtherBlasTraits::DirectLinearAccessType;
-    using ActualOtherType_ = internal::remove_all_t<ActualOtherType>;
+    typedef typename MatrixType::Scalar Scalar;
+    typedef internal::blas_traits<OtherType> OtherBlasTraits;
+    typedef typename OtherBlasTraits::DirectLinearAccessType ActualOtherType;
+    typedef internal::remove_all_t<ActualOtherType> ActualOtherType_;
     internal::add_const_on_value_type_t<ActualOtherType> actualOther = OtherBlasTraits::extract(other.derived());
 
     Scalar actualAlpha = alpha * OtherBlasTraits::extractScalarFactor(other.derived());
@@ -191,13 +99,11 @@ struct selfadjoint_product_selector<MatrixType, OtherType, UpLo, false> {
 
     Index size = mat.cols();
     Index depth = actualOther.cols();
-    eigen_assert(actualOther.rows() == size);
-    if (size == 0 || depth == 0) return;
 
-    using BlockingType =
-        internal::gemm_blocking_space<IsRowMajor ? RowMajor : ColMajor, Scalar, Scalar,
-                                      MatrixType::MaxColsAtCompileTime, MatrixType::MaxColsAtCompileTime,
-                                      ActualOtherType_::MaxColsAtCompileTime>;
+    typedef internal::gemm_blocking_space<IsRowMajor ? RowMajor : ColMajor, Scalar, Scalar,
+                                          MatrixType::MaxColsAtCompileTime, MatrixType::MaxColsAtCompileTime,
+                                          ActualOtherType_::MaxColsAtCompileTime>
+        BlockingType;
 
     BlockingType blocking(size, size, depth, 1, false);
 
@@ -217,7 +123,7 @@ template <typename MatrixType, unsigned int UpLo>
 template <typename DerivedU>
 EIGEN_DEVICE_FUNC SelfAdjointView<MatrixType, UpLo>& SelfAdjointView<MatrixType, UpLo>::rankUpdate(
     const MatrixBase<DerivedU>& u, const Scalar& alpha) {
-  selfadjoint_product_selector<MatrixType, DerivedU, UpLo>::run(nestedExpression(), u.derived(), alpha);
+  selfadjoint_product_selector<MatrixType, DerivedU, UpLo>::run(_expression().const_cast_derived(), u.derived(), alpha);
 
   return *this;
 }

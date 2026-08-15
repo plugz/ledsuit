@@ -7,7 +7,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_SPARSE_TRIANGULARVIEW_H
 #define EIGEN_SPARSE_TRIANGULARVIEW_H
@@ -29,33 +28,35 @@ namespace Eigen {
  */
 template <typename MatrixType, unsigned int Mode>
 class TriangularViewImpl<MatrixType, Mode, Sparse> : public SparseMatrixBase<TriangularView<MatrixType, Mode> > {
-  using TriangularViewType = TriangularView<MatrixType, Mode>;
+  enum {
+    SkipFirst =
+        ((Mode & Lower) && !(MatrixType::Flags & RowMajorBit)) || ((Mode & Upper) && (MatrixType::Flags & RowMajorBit)),
+    SkipLast = !SkipFirst,
+    SkipDiag = (Mode & ZeroDiag) ? 1 : 0,
+    HasUnitDiag = (Mode & UnitDiag) ? 1 : 0
+  };
+
+  typedef TriangularView<MatrixType, Mode> TriangularViewType;
 
  protected:
   // dummy solve function to make TriangularView happy.
   void solve() const;
 
-  using Base = SparseMatrixBase<TriangularViewType>;
+  typedef SparseMatrixBase<TriangularViewType> Base;
 
  public:
   EIGEN_SPARSE_PUBLIC_INTERFACE(TriangularViewType)
 
-  using MatrixTypeNested = typename MatrixType::Nested;
-  using MatrixTypeNestedNonRef = std::remove_reference_t<MatrixTypeNested>;
-  using MatrixTypeNestedCleaned = internal::remove_all_t<MatrixTypeNested>;
+  typedef typename MatrixType::Nested MatrixTypeNested;
+  typedef std::remove_reference_t<MatrixTypeNested> MatrixTypeNestedNonRef;
+  typedef internal::remove_all_t<MatrixTypeNested> MatrixTypeNestedCleaned;
 
   template <typename RhsType, typename DstType>
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void _solve_impl(const RhsType& rhs, DstType& dst) const {
-    EIGEN_IF_CONSTEXPR ((std::is_same<RhsType, DstType>::value)) {
-      if (internal::extract_data(dst) != internal::extract_data(rhs)) dst = rhs;
-    } else {
+    if (!(internal::is_same<RhsType, DstType>::value && internal::extract_data(dst) == internal::extract_data(rhs)))
       dst = rhs;
-    }
     this->solveInPlace(dst);
   }
-
-  EIGEN_DEVICE_FUNC constexpr Index rows() const noexcept { return derived().nestedExpression().rows(); }
-  EIGEN_DEVICE_FUNC constexpr Index cols() const noexcept { return derived().nestedExpression().cols(); }
 
   /** Applies the inverse of \c *this to the dense vector or matrix \a other, "in-place" */
   template <typename OtherDerived>
@@ -70,12 +71,12 @@ namespace internal {
 
 template <typename ArgType, unsigned int Mode>
 struct unary_evaluator<TriangularView<ArgType, Mode>, IteratorBased> : evaluator_base<TriangularView<ArgType, Mode> > {
-  using XprType = TriangularView<ArgType, Mode>;
+  typedef TriangularView<ArgType, Mode> XprType;
 
  protected:
-  using Scalar = typename XprType::Scalar;
-  using StorageIndex = typename XprType::StorageIndex;
-  using EvalIterator = typename evaluator<ArgType>::InnerIterator;
+  typedef typename XprType::Scalar Scalar;
+  typedef typename XprType::StorageIndex StorageIndex;
+  typedef typename evaluator<ArgType>::InnerIterator EvalIterator;
 
   enum {
     SkipFirst =
@@ -93,36 +94,30 @@ struct unary_evaluator<TriangularView<ArgType, Mode>, IteratorBased> : evaluator
   inline Index nonZerosEstimate() const { return m_argImpl.nonZerosEstimate(); }
 
   class InnerIterator : public EvalIterator {
-    using Base = EvalIterator;
+    typedef EvalIterator Base;
 
    public:
     EIGEN_STRONG_INLINE InnerIterator(const unary_evaluator& xprEval, Index outer)
         : Base(xprEval.m_argImpl, outer),
           m_returnOne(false),
           m_containsDiag(Base::outer() < xprEval.m_arg.innerSize()) {
-      EIGEN_IF_CONSTEXPR (SkipFirst) {
+      if (SkipFirst) {
         while ((*this) && ((HasUnitDiag || SkipDiag) ? this->index() <= outer : this->index() < outer))
           Base::operator++();
-        EIGEN_IF_CONSTEXPR (HasUnitDiag) m_returnOne = m_containsDiag;
-      } else EIGEN_IF_CONSTEXPR (HasUnitDiag) {
-        if ((!Base::operator bool()) || Base::index() >= Base::outer()) {
-          if (Base::operator bool()) Base::operator++();
-          m_returnOne = m_containsDiag;
-        }
+        if (HasUnitDiag) m_returnOne = m_containsDiag;
+      } else if (HasUnitDiag && ((!Base::operator bool()) || Base::index() >= Base::outer())) {
+        if ((!SkipFirst) && Base::operator bool()) Base::operator++();
+        m_returnOne = m_containsDiag;
       }
     }
 
     EIGEN_STRONG_INLINE InnerIterator& operator++() {
-      EIGEN_IF_CONSTEXPR (HasUnitDiag) {
-        if (m_returnOne) {
-          m_returnOne = false;
-          return *this;
-        }
-      }
-      Base::operator++();
-      EIGEN_IF_CONSTEXPR (HasUnitDiag && !SkipFirst) {
-        if ((!Base::operator bool()) || Base::index() >= Base::outer()) {
-          if (Base::operator bool()) Base::operator++();
+      if (HasUnitDiag && m_returnOne)
+        m_returnOne = false;
+      else {
+        Base::operator++();
+        if (HasUnitDiag && (!SkipFirst) && ((!Base::operator bool()) || Base::index() >= Base::outer())) {
+          if ((!SkipFirst) && Base::operator bool()) Base::operator++();
           m_returnOne = m_containsDiag;
         }
       }
@@ -130,33 +125,30 @@ struct unary_evaluator<TriangularView<ArgType, Mode>, IteratorBased> : evaluator
     }
 
     EIGEN_STRONG_INLINE operator bool() const {
-      EIGEN_IF_CONSTEXPR (HasUnitDiag) {
-        if (m_returnOne) return true;
-      }
-      EIGEN_IF_CONSTEXPR (SkipFirst) {
+      if (HasUnitDiag && m_returnOne) return true;
+      if (SkipFirst)
         return Base::operator bool();
-      } else {
-        EIGEN_IF_CONSTEXPR (SkipDiag) {
+      else {
+        if (SkipDiag)
           return (Base::operator bool() && this->index() < this->outer());
-        } else {
+        else
           return (Base::operator bool() && this->index() <= this->outer());
-        }
       }
     }
 
     inline Index row() const { return (ArgType::Flags & RowMajorBit ? Base::outer() : this->index()); }
     inline Index col() const { return (ArgType::Flags & RowMajorBit ? this->index() : Base::outer()); }
     inline StorageIndex index() const {
-      EIGEN_IF_CONSTEXPR (HasUnitDiag) {
-        if (m_returnOne) return internal::convert_index<StorageIndex>(Base::outer());
-      }
-      return Base::index();
+      if (HasUnitDiag && m_returnOne)
+        return internal::convert_index<StorageIndex>(Base::outer());
+      else
+        return Base::index();
     }
     inline Scalar value() const {
-      EIGEN_IF_CONSTEXPR (HasUnitDiag) {
-        if (m_returnOne) return Scalar(1);
-      }
-      return Base::value();
+      if (HasUnitDiag && m_returnOne)
+        return Scalar(1);
+      else
+        return Base::value();
     }
 
    protected:

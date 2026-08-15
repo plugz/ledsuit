@@ -12,7 +12,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-// SPDX-License-Identifier: Apache-2.0
 
 #ifndef EIGEN_BFLOAT16_H
 #define EIGEN_BFLOAT16_H
@@ -38,45 +37,6 @@ limitations under the License.
       const PACKET_BF16& _x) {                                                                      \
     return F32ToBf16(METHOD<PACKET_F>(Bf16ToF32(_x)));                                              \
   }
-
-#define EIGEN_INSTANTIATE_GENERIC_MATH_FUNCS_BF16(PACKET_F, PACKET_BF16) \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pcos)                      \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, psin)                      \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, psinh)                     \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pcosh)                     \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pasinh)                    \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pacosh)                    \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pexp)                      \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pexp2)                     \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pexpm1)                    \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, plog)                      \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, plog1p)                    \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, plog2)                     \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, plog10)                    \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, preciprocal)               \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, prsqrt)                    \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pcbrt)                     \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, psqrt)                     \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, ptanh)
-
-// BF16 wrappers for unsupported/SpecialFunctions.
-#define EIGEN_INSTANTIATE_SPECIAL_FUNCS_BF16(PACKET_F, PACKET_BF16) \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, perf)                 \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pndtri)
-
-#define EIGEN_INSTANTIATE_BESSEL_FUNCS_BF16(PACKET_F, PACKET_BF16) \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pbessel_i0)          \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pbessel_i0e)         \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pbessel_i1)          \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pbessel_i1e)         \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pbessel_j0)          \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pbessel_j1)          \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pbessel_k0)          \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pbessel_k0e)         \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pbessel_k1)          \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pbessel_k1e)         \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pbessel_y0)          \
-  BF16_PACKET_FUNCTION(PACKET_F, PACKET_BF16, pbessel_y1)
 
 // Only use HIP GPU bf16 in kernels
 #if defined(EIGEN_HAS_HIP_BF16) && defined(EIGEN_GPU_COMPILE_PHASE)
@@ -139,7 +99,7 @@ struct bfloat16_base : public __bfloat16_raw {
 
 // Class definition.
 struct bfloat16 : public bfloat16_impl::bfloat16_base {
-  using __bfloat16_raw = bfloat16_impl::__bfloat16_raw;
+  typedef bfloat16_impl::__bfloat16_raw __bfloat16_raw;
 
   EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR bfloat16() {}
 
@@ -151,7 +111,7 @@ struct bfloat16 : public bfloat16_impl::bfloat16_base {
   template <class T>
   explicit EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR bfloat16(T val)
       : bfloat16_impl::bfloat16_base(
-            bfloat16_impl::float_to_bfloat16_rtne<std::is_integral<T>::value>(static_cast<float>(val))) {}
+            bfloat16_impl::float_to_bfloat16_rtne<internal::is_integral<T>::value>(static_cast<float>(val))) {}
 
   explicit EIGEN_DEVICE_FUNC bfloat16(float f)
       : bfloat16_impl::bfloat16_base(bfloat16_impl::float_to_bfloat16_rtne<false>(f)) {}
@@ -167,7 +127,7 @@ struct bfloat16 : public bfloat16_impl::bfloat16_base {
   }
 };
 
-// TODO(majnemer): Get rid of this once we can rely on C++17 inline variables to
+// TODO(majnemer): Get rid of this once we can rely on C++17 inline variables do
 // solve the ODR issue.
 namespace bfloat16_impl {
 template <typename = void>
@@ -216,8 +176,6 @@ struct numeric_limits_bfloat16_impl {
   static EIGEN_CONSTEXPR Eigen::bfloat16 denorm_min() { return Eigen::bfloat16_impl::raw_uint16_to_bfloat16(0x0001); }
 };
 
-// Redundant out-of-class definitions are required pre-C++17 but deprecated since.
-#if EIGEN_COMP_CXXVER < 17
 template <typename T>
 EIGEN_CONSTEXPR const bool numeric_limits_bfloat16_impl<T>::is_specialized;
 template <typename T>
@@ -267,7 +225,6 @@ template <typename T>
 EIGEN_CONSTEXPR const bool numeric_limits_bfloat16_impl<T>::traps;
 template <typename T>
 EIGEN_CONSTEXPR const bool numeric_limits_bfloat16_impl<T>::tinyness_before;
-#endif
 }  // end namespace bfloat16_impl
 }  // end namespace Eigen
 
@@ -295,7 +252,7 @@ namespace bfloat16_impl {
 // of the functions, while the latter can only deal with one of them.
 #if !defined(EIGEN_HAS_NATIVE_BF16) || (EIGEN_COMP_CLANG && !EIGEN_COMP_NVCC)  // Emulate support for bfloat16 floats
 
-#if EIGEN_COMP_CLANG && defined(EIGEN_GPUCC)
+#if EIGEN_COMP_CLANG && defined(EIGEN_CUDACC)
 // We need to provide emulated *host-side* BF16 operators for clang.
 #pragma push_macro("EIGEN_DEVICE_FUNC")
 #undef EIGEN_DEVICE_FUNC
@@ -658,10 +615,6 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 abs(const bfloat16& a) {
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 exp(const bfloat16& a) { return bfloat16(::expf(float(a))); }
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 exp2(const bfloat16& a) { return bfloat16(::exp2f(float(a))); }
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 expm1(const bfloat16& a) { return bfloat16(numext::expm1(float(a))); }
-// float covers the bfloat16 range, so the single conversion back rounds correctly.
-EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 ldexp(const bfloat16& a, int exponent) {
-  return bfloat16(numext::ldexp(float(a), exponent));
-}
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 log(const bfloat16& a) { return bfloat16(::logf(float(a))); }
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 log1p(const bfloat16& a) { return bfloat16(numext::log1p(float(a))); }
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 log10(const bfloat16& a) { return bfloat16(::log10f(float(a))); }
@@ -669,7 +622,6 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 log2(const bfloat16& a) {
   return bfloat16(static_cast<float>(EIGEN_LOG2E) * ::logf(float(a)));
 }
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 sqrt(const bfloat16& a) { return bfloat16(::sqrtf(float(a))); }
-EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 cbrt(const bfloat16& a) { return bfloat16(::cbrtf(float(a))); }
 EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 pow(const bfloat16& a, const bfloat16& b) {
   return bfloat16(::powf(float(a), float(b)));
 }
@@ -738,7 +690,9 @@ EIGEN_ALWAYS_INLINE std::ostream& operator<<(std::ostream& os, const bfloat16& v
 namespace internal {
 
 template <>
-struct is_arithmetic<bfloat16> : std::true_type {};
+struct is_arithmetic<bfloat16> {
+  enum { value = true };
+};
 
 template <>
 struct random_impl<bfloat16> {
@@ -840,10 +794,8 @@ EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC bfloat16 nextafter(const bfloat16& from, c
 }
 
 // Specialize multiply-add to match packet operations and reduce conversions to/from float.
-template <>
-EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Eigen::bfloat16 madd<Eigen::bfloat16>(const Eigen::bfloat16& x,
-                                                                            const Eigen::bfloat16& y,
-                                                                            const Eigen::bfloat16& z) {
+template<>
+EIGEN_STRONG_INLINE EIGEN_DEVICE_FUNC Eigen::bfloat16 madd<Eigen::bfloat16>(const Eigen::bfloat16& x, const Eigen::bfloat16& y, const Eigen::bfloat16& z) {
   return Eigen::bfloat16(static_cast<float>(x) * static_cast<float>(y) + static_cast<float>(z));
 }
 
@@ -861,8 +813,16 @@ struct hash<Eigen::bfloat16> {
 }  // namespace std
 #endif
 
-// Warp shuffle overloads for Eigen::bfloat16.
-// HIP uses non-sync __shfl variants; CUDA has native __nv_bfloat16 support in __shfl_sync.
+// Add the missing shfl* intrinsics.
+// The __shfl* functions are only valid on HIP or _CUDA_ARCH_ >= 300.
+//   CUDA defines them for (__CUDA_ARCH__ >= 300 || !defined(__CUDA_ARCH__))
+//
+// HIP and CUDA prior to SDK 9.0 define
+//    __shfl, __shfl_up, __shfl_down, __shfl_xor for int and float
+// CUDA since 9.0 deprecates those and instead defines
+//    __shfl_sync, __shfl_up_sync, __shfl_down_sync, __shfl_xor_sync,
+//    with native support for __half and __nv_bfloat16
+//
 // Note that the following are __device__ - only functions.
 #if defined(EIGEN_HIPCC)
 

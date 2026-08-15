@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_TRIANGULAR_MATRIX_MATRIX_H
 #define EIGEN_TRIANGULAR_MATRIX_MATRIX_H
@@ -17,6 +16,30 @@
 namespace Eigen {
 
 namespace internal {
+
+// template<typename Scalar, int mr, int StorageOrder, bool Conjugate, int Mode>
+// struct gemm_pack_lhs_triangular
+// {
+//   Matrix<Scalar,mr,mr,
+//   void operator()(Scalar* blockA, const EIGEN_RESTRICT Scalar* lhs_, int lhsStride, int depth, int rows)
+//   {
+//     conj_if<NumTraits<Scalar>::IsComplex && Conjugate> cj;
+//     const_blas_data_mapper<Scalar, StorageOrder> lhs(lhs_,lhsStride);
+//     int count = 0;
+//     const int peeled_mc = (rows/mr)*mr;
+//     for(int i=0; i<peeled_mc; i+=mr)
+//     {
+//       for(int k=0; k<depth; k++)
+//         for(int w=0; w<mr; w++)
+//           blockA[count++] = cj(lhs(i+w, k));
+//     }
+//     for(int i=peeled_mc; i<rows; i++)
+//     {
+//       for(int k=0; k<depth; k++)
+//         blockA[count++] = cj(lhs(i, k));
+//     }
+//   }
+// };
 
 /* Optimized triangular matrix * matrix (_TRMM++) product built on top of
  * the general matrix matrix product.
@@ -45,7 +68,7 @@ template <typename Scalar, typename Index, int Mode, int LhsStorageOrder, bool C
           bool ConjugateRhs, int ResInnerStride, int Version>
 struct product_triangular_matrix_matrix<Scalar, Index, Mode, true, LhsStorageOrder, ConjugateLhs, RhsStorageOrder,
                                         ConjugateRhs, ColMajor, ResInnerStride, Version> {
-  using Traits = gebp_traits<Scalar, Scalar>;
+  typedef gebp_traits<Scalar, Scalar> Traits;
   enum {
     SmallPanelWidth = 2 * plain_enum_max(Traits::mr, Traits::nr),
     IsLower = (Mode & Lower) == Lower,
@@ -70,9 +93,9 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<
   Index depth = IsLower ? diagSize : _depth;
   Index cols = _cols;
 
-  using LhsMapper = const_blas_data_mapper<Scalar, Index, LhsStorageOrder>;
-  using RhsMapper = const_blas_data_mapper<Scalar, Index, RhsStorageOrder>;
-  using ResMapper = blas_data_mapper<typename Traits::ResScalar, Index, ColMajor, Unaligned, ResInnerStride>;
+  typedef const_blas_data_mapper<Scalar, Index, LhsStorageOrder> LhsMapper;
+  typedef const_blas_data_mapper<Scalar, Index, RhsStorageOrder> RhsMapper;
+  typedef blas_data_mapper<typename Traits::ResScalar, Index, ColMajor, Unaligned, ResInnerStride> ResMapper;
   LhsMapper lhs(lhs_, lhsStride);
   RhsMapper rhs(rhs_, rhsStride);
   ResMapper res(res_, resStride, resIncr);
@@ -92,7 +115,7 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<
 
   Matrix<Scalar, SmallPanelWidth, SmallPanelWidth, LhsStorageOrder> triangularBuffer;
   triangularBuffer.setZero();
-  EIGEN_IF_CONSTEXPR ((Mode & ZeroDiag) == ZeroDiag)
+  if ((Mode & ZeroDiag) == ZeroDiag)
     triangularBuffer.diagonal().setZero();
   else
     triangularBuffer.diagonal().setOnes();
@@ -108,11 +131,9 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<
     Index actual_k2 = IsLower ? k2 - actual_kc : k2;
 
     // align blocks with the end of the triangular part for trapezoidal lhs
-    EIGEN_IF_CONSTEXPR (!IsLower) {
-      if ((k2 < rows) && (k2 + actual_kc > rows)) {
-        actual_kc = rows - k2;
-        k2 = k2 + actual_kc - kc;
-      }
+    if ((!IsLower) && (k2 < rows) && (k2 + actual_kc > rows)) {
+      actual_kc = rows - k2;
+      k2 = k2 + actual_kc - kc;
     }
 
     pack_rhs(blockB, rhs.getSubMapper(actual_k2, 0), actual_kc, cols);
@@ -135,7 +156,7 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<
         // The trick is to pack this micro block while filling the opposite triangular part with zeros.
         // To this end we do an extra triangular copy to a small temporary buffer
         for (Index k = 0; k < actualPanelWidth; ++k) {
-          EIGEN_IF_CONSTEXPR (SetDiag) triangularBuffer.coeffRef(k, k) = lhs(startBlock + k, startBlock + k);
+          if (SetDiag) triangularBuffer.coeffRef(k, k) = lhs(startBlock + k, startBlock + k);
           for (Index i = IsLower ? k + 1 : 0; IsLower ? i < actualPanelWidth : i < k; ++i)
             triangularBuffer.coeffRef(i, k) = lhs(startBlock + i, startBlock + k);
         }
@@ -176,7 +197,7 @@ template <typename Scalar, typename Index, int Mode, int LhsStorageOrder, bool C
           bool ConjugateRhs, int ResInnerStride, int Version>
 struct product_triangular_matrix_matrix<Scalar, Index, Mode, false, LhsStorageOrder, ConjugateLhs, RhsStorageOrder,
                                         ConjugateRhs, ColMajor, ResInnerStride, Version> {
-  using Traits = gebp_traits<Scalar, Scalar>;
+  typedef gebp_traits<Scalar, Scalar> Traits;
   enum {
     SmallPanelWidth = plain_enum_max(Traits::mr, Traits::nr),
     IsLower = (Mode & Lower) == Lower,
@@ -202,9 +223,9 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<
   Index depth = IsLower ? _depth : diagSize;
   Index cols = IsLower ? diagSize : _cols;
 
-  using LhsMapper = const_blas_data_mapper<Scalar, Index, LhsStorageOrder>;
-  using RhsMapper = const_blas_data_mapper<Scalar, Index, RhsStorageOrder>;
-  using ResMapper = blas_data_mapper<typename Traits::ResScalar, Index, ColMajor, Unaligned, ResInnerStride>;
+  typedef const_blas_data_mapper<Scalar, Index, LhsStorageOrder> LhsMapper;
+  typedef const_blas_data_mapper<Scalar, Index, RhsStorageOrder> RhsMapper;
+  typedef blas_data_mapper<typename Traits::ResScalar, Index, ColMajor, Unaligned, ResInnerStride> ResMapper;
   LhsMapper lhs(lhs_, lhsStride);
   RhsMapper rhs(rhs_, rhsStride);
   ResMapper res(res_, resStride, resIncr);
@@ -220,7 +241,7 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<
 
   Matrix<Scalar, SmallPanelWidth, SmallPanelWidth, RhsStorageOrder> triangularBuffer;
   triangularBuffer.setZero();
-  EIGEN_IF_CONSTEXPR ((Mode & ZeroDiag) == ZeroDiag)
+  if ((Mode & ZeroDiag) == ZeroDiag)
     triangularBuffer.diagonal().setZero();
   else
     triangularBuffer.diagonal().setOnes();
@@ -237,11 +258,9 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<
     Index actual_k2 = IsLower ? k2 : k2 - actual_kc;
 
     // align blocks with the end of the triangular part for trapezoidal rhs
-    EIGEN_IF_CONSTEXPR (IsLower) {
-      if ((k2 < cols) && (actual_k2 + actual_kc > cols)) {
-        actual_kc = cols - k2;
-        k2 = actual_k2 + actual_kc - kc;
-      }
+    if (IsLower && (k2 < cols) && (actual_k2 + actual_kc > cols)) {
+      actual_kc = cols - k2;
+      k2 = actual_k2 + actual_kc - kc;
     }
 
     // remaining size
@@ -267,7 +286,7 @@ EIGEN_DONT_INLINE void product_triangular_matrix_matrix<
 
         // append the triangular part via a temporary buffer
         for (Index j = 0; j < actualPanelWidth; ++j) {
-          EIGEN_IF_CONSTEXPR (SetDiag) triangularBuffer.coeffRef(j, j) = rhs(actual_j2 + j, actual_j2 + j);
+          if (SetDiag) triangularBuffer.coeffRef(j, j) = rhs(actual_j2 + j, actual_j2 + j);
           for (Index k = IsLower ? j + 1 : 0; IsLower ? k < actualPanelWidth : k < j; ++k)
             triangularBuffer.coeffRef(k, j) = rhs(actual_j2 + k, actual_j2 + j);
         }
@@ -309,16 +328,16 @@ template <int Mode, bool LhsIsTriangular, typename Lhs, typename Rhs>
 struct triangular_product_impl<Mode, LhsIsTriangular, Lhs, false, Rhs, false> {
   template <typename Dest>
   static void run(Dest& dst, const Lhs& a_lhs, const Rhs& a_rhs, const typename Dest::Scalar& alpha) {
-    using LhsScalar = typename Lhs::Scalar;
-    using RhsScalar = typename Rhs::Scalar;
-    using Scalar = typename Dest::Scalar;
+    typedef typename Lhs::Scalar LhsScalar;
+    typedef typename Rhs::Scalar RhsScalar;
+    typedef typename Dest::Scalar Scalar;
 
-    using LhsBlasTraits = internal::blas_traits<Lhs>;
-    using ActualLhsType = typename LhsBlasTraits::DirectLinearAccessType;
-    using ActualLhsTypeCleaned = internal::remove_all_t<ActualLhsType>;
-    using RhsBlasTraits = internal::blas_traits<Rhs>;
-    using ActualRhsType = typename RhsBlasTraits::DirectLinearAccessType;
-    using ActualRhsTypeCleaned = internal::remove_all_t<ActualRhsType>;
+    typedef internal::blas_traits<Lhs> LhsBlasTraits;
+    typedef typename LhsBlasTraits::DirectLinearAccessType ActualLhsType;
+    typedef internal::remove_all_t<ActualLhsType> ActualLhsTypeCleaned;
+    typedef internal::blas_traits<Rhs> RhsBlasTraits;
+    typedef typename RhsBlasTraits::DirectLinearAccessType ActualRhsType;
+    typedef internal::remove_all_t<ActualRhsType> ActualRhsTypeCleaned;
 
     internal::add_const_on_value_type_t<ActualLhsType> lhs = LhsBlasTraits::extract(a_lhs);
     internal::add_const_on_value_type_t<ActualRhsType> rhs = RhsBlasTraits::extract(a_rhs);
@@ -333,9 +352,10 @@ struct triangular_product_impl<Mode, LhsIsTriangular, Lhs, false, Rhs, false> {
     RhsScalar rhs_alpha = RhsBlasTraits::extractScalarFactor(a_rhs);
     Scalar actualAlpha = alpha * lhs_alpha * rhs_alpha;
 
-    using BlockingType = internal::gemm_blocking_space<(Dest::Flags & RowMajorBit) ? RowMajor : ColMajor, Scalar,
-                                                       Scalar, Lhs::MaxRowsAtCompileTime, Rhs::MaxColsAtCompileTime,
-                                                       Lhs::MaxColsAtCompileTime, 4>;
+    typedef internal::gemm_blocking_space<(Dest::Flags & RowMajorBit) ? RowMajor : ColMajor, Scalar, Scalar,
+                                          Lhs::MaxRowsAtCompileTime, Rhs::MaxColsAtCompileTime,
+                                          Lhs::MaxColsAtCompileTime, 4>
+        BlockingType;
 
     enum { IsLower = (Mode & Lower) == Lower };
     Index stripedRows = ((!LhsIsTriangular) || (IsLower)) ? lhs.rows() : (std::min)(lhs.rows(), lhs.cols());
@@ -358,17 +378,13 @@ struct triangular_product_impl<Mode, LhsIsTriangular, Lhs, false, Rhs, false> {
                                              actualAlpha, blocking);
 
     // Apply correction if the diagonal is unit and a scalar factor was nested:
-    EIGEN_IF_CONSTEXPR ((Mode & UnitDiag) == UnitDiag) {
-      EIGEN_IF_CONSTEXPR (LhsIsTriangular) {
-        if (!numext::is_exactly_one(lhs_alpha)) {
-          Index diagSize = (std::min)(lhs.rows(), lhs.cols());
-          dst.topRows(diagSize) -= ((lhs_alpha - LhsScalar(1)) * a_rhs).topRows(diagSize);
-        }
-      } else {
-        if (!numext::is_exactly_one(rhs_alpha)) {
-          Index diagSize = (std::min)(rhs.rows(), rhs.cols());
-          dst.leftCols(diagSize) -= (rhs_alpha - RhsScalar(1)) * a_lhs.leftCols(diagSize);
-        }
+    if ((Mode & UnitDiag) == UnitDiag) {
+      if (LhsIsTriangular && !numext::is_exactly_one(lhs_alpha)) {
+        Index diagSize = (std::min)(lhs.rows(), lhs.cols());
+        dst.topRows(diagSize) -= ((lhs_alpha - LhsScalar(1)) * a_rhs).topRows(diagSize);
+      } else if ((!LhsIsTriangular) && !numext::is_exactly_one(rhs_alpha)) {
+        Index diagSize = (std::min)(rhs.rows(), rhs.cols());
+        dst.leftCols(diagSize) -= (rhs_alpha - RhsScalar(1)) * a_lhs.leftCols(diagSize);
       }
     }
   }

@@ -7,7 +7,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_INVERSE_IMPL_H
 #define EIGEN_INVERSE_IMPL_H
@@ -41,7 +40,7 @@ struct compute_inverse_and_det_with_check { /* nothing! general case not support
 template <typename MatrixType, typename ResultType>
 struct compute_inverse<MatrixType, ResultType, 1> {
   EIGEN_DEVICE_FUNC static inline void run(const MatrixType& matrix, ResultType& result) {
-    using Scalar = typename MatrixType::Scalar;
+    typedef typename MatrixType::Scalar Scalar;
     internal::evaluator<MatrixType> matrixEval(matrix);
     result.coeffRef(0, 0) = Scalar(1) / matrixEval.coeff(0, 0);
   }
@@ -78,7 +77,7 @@ EIGEN_DEVICE_FUNC inline void compute_inverse_size2_helper(const MatrixType& mat
 template <typename MatrixType, typename ResultType>
 struct compute_inverse<MatrixType, ResultType, 2> {
   EIGEN_DEVICE_FUNC static inline void run(const MatrixType& matrix, ResultType& result) {
-    using Scalar = typename ResultType::Scalar;
+    typedef typename ResultType::Scalar Scalar;
     const Scalar invdet = typename MatrixType::Scalar(1) / matrix.determinant();
     compute_inverse_size2_helper(matrix, invdet, result);
   }
@@ -91,7 +90,7 @@ struct compute_inverse_and_det_with_check<MatrixType, ResultType, 2> {
                                            ResultType& inverse, typename ResultType::Scalar& determinant,
                                            bool& invertible) {
     using std::abs;
-    using Scalar = typename ResultType::Scalar;
+    typedef typename ResultType::Scalar Scalar;
     determinant = matrix.determinant();
     invertible = abs(determinant) > absDeterminantThreshold;
     if (!invertible) return;
@@ -115,7 +114,7 @@ EIGEN_DEVICE_FUNC inline void compute_inverse_size3_helper(
     const MatrixType& matrix, const typename ResultType::Scalar& invdet,
     const Matrix<typename ResultType::Scalar, 3, 1>& cofactors_col0, ResultType& result) {
   // Compute cofactors in a way that avoids aliasing issues.
-  using Scalar = typename ResultType::Scalar;
+  typedef typename ResultType::Scalar Scalar;
   const Scalar c01 = cofactor_3x3<MatrixType, 0, 1>(matrix) * invdet;
   const Scalar c11 = cofactor_3x3<MatrixType, 1, 1>(matrix) * invdet;
   const Scalar c02 = cofactor_3x3<MatrixType, 0, 2>(matrix) * invdet;
@@ -131,7 +130,7 @@ EIGEN_DEVICE_FUNC inline void compute_inverse_size3_helper(
 template <typename MatrixType, typename ResultType>
 struct compute_inverse<MatrixType, ResultType, 3> {
   EIGEN_DEVICE_FUNC static inline void run(const MatrixType& matrix, ResultType& result) {
-    using Scalar = typename ResultType::Scalar;
+    typedef typename ResultType::Scalar Scalar;
     Matrix<typename MatrixType::Scalar, 3, 1> cofactors_col0;
     cofactors_col0.coeffRef(0) = cofactor_3x3<MatrixType, 0, 0>(matrix);
     cofactors_col0.coeffRef(1) = cofactor_3x3<MatrixType, 1, 0>(matrix);
@@ -148,7 +147,7 @@ struct compute_inverse_and_det_with_check<MatrixType, ResultType, 3> {
                                            const typename MatrixType::RealScalar& absDeterminantThreshold,
                                            ResultType& inverse, typename ResultType::Scalar& determinant,
                                            bool& invertible) {
-    using Scalar = typename ResultType::Scalar;
+    typedef typename ResultType::Scalar Scalar;
     Matrix<Scalar, 3, 1> cofactors_col0;
     cofactors_col0.coeffRef(0) = cofactor_3x3<MatrixType, 0, 0>(matrix);
     cofactors_col0.coeffRef(1) = cofactor_3x3<MatrixType, 1, 0>(matrix);
@@ -236,7 +235,7 @@ namespace internal {
 template <typename DstXprType, typename XprType>
 struct Assignment<DstXprType, Inverse<XprType>,
                   internal::assign_op<typename DstXprType::Scalar, typename XprType::Scalar>, Dense2Dense> {
-  using SrcXprType = Inverse<XprType>;
+  typedef Inverse<XprType> SrcXprType;
   EIGEN_DEVICE_FUNC static void run(DstXprType& dst, const SrcXprType& src,
                                     const internal::assign_op<typename DstXprType::Scalar, typename XprType::Scalar>&) {
     Index dstRows = src.rows();
@@ -248,8 +247,8 @@ struct Assignment<DstXprType, Inverse<XprType>,
     eigen_assert(((Size <= 1) || (Size > 4) || (extract_data(src.nestedExpression()) != extract_data(dst))) &&
                  "Aliasing problem detected in inverse(), you need to do inverse().eval() here.");
 
-    using ActualXprType = typename internal::nested_eval<XprType, XprType::ColsAtCompileTime>::type;
-    using ActualXprTypeCleanded = internal::remove_all_t<ActualXprType>;
+    typedef typename internal::nested_eval<XprType, XprType::ColsAtCompileTime>::type ActualXprType;
+    typedef internal::remove_all_t<ActualXprType> ActualXprTypeCleanded;
 
     ActualXprType actual_xpr(src.nestedExpression());
 
@@ -277,7 +276,7 @@ struct Assignment<DstXprType, Inverse<XprType>,
  * \sa computeInverseAndDetWithCheck()
  */
 template <typename Derived>
-EIGEN_DEVICE_FUNC inline Inverse<Derived> MatrixBase<Derived>::inverse() const {
+EIGEN_DEVICE_FUNC inline const Inverse<Derived> MatrixBase<Derived>::inverse() const {
   EIGEN_STATIC_ASSERT(!NumTraits<Scalar>::IsInteger, THIS_FUNCTION_IS_NOT_FOR_INTEGER_NUMERIC_TYPES)
   eigen_assert(rows() == cols());
   return Inverse<Derived>(derived());
@@ -309,14 +308,13 @@ inline void MatrixBase<Derived>::computeInverseAndDetWithCheck(ResultType& inver
                                                                typename ResultType::Scalar& determinant,
                                                                bool& invertible,
                                                                const RealScalar& absDeterminantThreshold) const {
-  EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(Derived, ResultType)
+  // i'd love to put some static assertions there, but SFINAE means that they have no effect...
   eigen_assert(rows() == cols());
-  inverse.resize(rows(), cols());
   // for 2x2, it's worth giving a chance to avoid evaluating.
   // for larger sizes, evaluating has negligible cost and limits code size.
-  using MatrixType =
-      std::conditional_t<RowsAtCompileTime == 2,
-                         internal::remove_all_t<typename internal::nested_eval<Derived, 2>::type>, PlainObject>;
+  typedef std::conditional_t<RowsAtCompileTime == 2,
+                             internal::remove_all_t<typename internal::nested_eval<Derived, 2>::type>, PlainObject>
+      MatrixType;
   internal::compute_inverse_and_det_with_check<MatrixType, ResultType>::run(derived(), absDeterminantThreshold, inverse,
                                                                             determinant, invertible);
 }
@@ -345,6 +343,8 @@ template <typename ResultType>
 inline void MatrixBase<Derived>::computeInverseWithCheck(ResultType& inverse, bool& invertible,
                                                          const RealScalar& absDeterminantThreshold) const {
   Scalar determinant;
+  // i'd love to put some static assertions there, but SFINAE means that they have no effect...
+  eigen_assert(rows() == cols());
   computeInverseAndDetWithCheck(inverse, determinant, invertible, absDeterminantThreshold);
 }
 

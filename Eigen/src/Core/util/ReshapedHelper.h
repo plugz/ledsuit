@@ -6,7 +6,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_RESHAPED_HELPER_H
 #define EIGEN_RESHAPED_HELPER_H
@@ -22,7 +21,9 @@ const int AutoOrder = 2;
 namespace internal {
 
 template <typename SizeType, typename OtherSize, int TotalSize>
-struct get_compiletime_reshape_size : get_fixed_value<SizeType> {};
+struct get_compiletime_reshape_size {
+  enum { value = get_fixed_value<SizeType>::value };
+};
 
 template <typename SizeType>
 Index get_runtime_reshape_size(SizeType size, Index /*other*/, Index /*total*/) {

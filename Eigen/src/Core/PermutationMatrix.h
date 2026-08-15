@@ -7,7 +7,6 @@
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
-// SPDX-License-Identifier: MPL-2.0
 
 #ifndef EIGEN_PERMUTATIONMATRIX_H
 #define EIGEN_PERMUTATIONMATRIX_H
@@ -48,12 +47,12 @@ enum PermPermProduct_t { PermPermProduct };
  */
 template <typename Derived>
 class PermutationBase : public EigenBase<Derived> {
-  using Traits = internal::traits<Derived>;
-  using Base = EigenBase<Derived>;
+  typedef internal::traits<Derived> Traits;
+  typedef EigenBase<Derived> Base;
 
  public:
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-  using IndicesType = typename Traits::IndicesType;
+  typedef typename Traits::IndicesType IndicesType;
   enum {
     Flags = Traits::Flags,
     RowsAtCompileTime = Traits::RowsAtCompileTime,
@@ -61,15 +60,15 @@ class PermutationBase : public EigenBase<Derived> {
     MaxRowsAtCompileTime = Traits::MaxRowsAtCompileTime,
     MaxColsAtCompileTime = Traits::MaxColsAtCompileTime
   };
-  using StorageIndex = typename Traits::StorageIndex;
-  using DenseMatrixType =
-      Matrix<StorageIndex, RowsAtCompileTime, ColsAtCompileTime, 0, MaxRowsAtCompileTime, MaxColsAtCompileTime>;
-  using PlainPermutationType =
-      PermutationMatrix<IndicesType::SizeAtCompileTime, IndicesType::MaxSizeAtCompileTime, StorageIndex>;
-  using PlainObject = PlainPermutationType;
+  typedef typename Traits::StorageIndex StorageIndex;
+  typedef Matrix<StorageIndex, RowsAtCompileTime, ColsAtCompileTime, 0, MaxRowsAtCompileTime, MaxColsAtCompileTime>
+      DenseMatrixType;
+  typedef PermutationMatrix<IndicesType::SizeAtCompileTime, IndicesType::MaxSizeAtCompileTime, StorageIndex>
+      PlainPermutationType;
+  typedef PlainPermutationType PlainObject;
   using Base::derived;
-  using InverseReturnType = Inverse<Derived>;
-  using Scalar = void;
+  typedef Inverse<Derived> InverseReturnType;
+  typedef void Scalar;
 #endif
 
   /** Copies the other permutation into *this */
@@ -249,6 +248,8 @@ class PermutationBase : public EigenBase<Derived> {
     }
     return res;
   }
+
+ protected:
 };
 
 namespace internal {
@@ -256,10 +257,10 @@ template <int SizeAtCompileTime, int MaxSizeAtCompileTime, typename StorageIndex
 struct traits<PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime, StorageIndex_> >
     : traits<
           Matrix<StorageIndex_, SizeAtCompileTime, SizeAtCompileTime, 0, MaxSizeAtCompileTime, MaxSizeAtCompileTime> > {
-  using StorageKind = PermutationStorage;
-  using IndicesType = Matrix<StorageIndex_, SizeAtCompileTime, 1, 0, MaxSizeAtCompileTime, 1>;
-  using StorageIndex = StorageIndex_;
-  using Scalar = void;
+  typedef PermutationStorage StorageKind;
+  typedef Matrix<StorageIndex_, SizeAtCompileTime, 1, 0, MaxSizeAtCompileTime, 1> IndicesType;
+  typedef StorageIndex_ StorageIndex;
+  typedef void Scalar;
 };
 }  // namespace internal
 
@@ -280,15 +281,15 @@ struct traits<PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime, Storage
 template <int SizeAtCompileTime, int MaxSizeAtCompileTime, typename StorageIndex_>
 class PermutationMatrix
     : public PermutationBase<PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime, StorageIndex_> > {
-  using Base = PermutationBase<PermutationMatrix>;
-  using Traits = internal::traits<PermutationMatrix>;
+  typedef PermutationBase<PermutationMatrix> Base;
+  typedef internal::traits<PermutationMatrix> Traits;
 
  public:
-  using Nested = const PermutationMatrix&;
+  typedef const PermutationMatrix& Nested;
 
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-  using IndicesType = typename Traits::IndicesType;
-  using StorageIndex = typename Traits::StorageIndex;
+  typedef typename Traits::IndicesType IndicesType;
+  typedef typename Traits::StorageIndex StorageIndex;
 #endif
 
   inline PermutationMatrix() {}
@@ -363,10 +364,10 @@ template <int SizeAtCompileTime, int MaxSizeAtCompileTime, typename StorageIndex
 struct traits<Map<PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime, StorageIndex_>, PacketAccess_> >
     : traits<
           Matrix<StorageIndex_, SizeAtCompileTime, SizeAtCompileTime, 0, MaxSizeAtCompileTime, MaxSizeAtCompileTime> > {
-  using StorageKind = PermutationStorage;
-  using IndicesType = Map<const Matrix<StorageIndex_, SizeAtCompileTime, 1, 0, MaxSizeAtCompileTime, 1>, PacketAccess_>;
-  using StorageIndex = StorageIndex_;
-  using Scalar = void;
+  typedef PermutationStorage StorageKind;
+  typedef Map<const Matrix<StorageIndex_, SizeAtCompileTime, 1, 0, MaxSizeAtCompileTime, 1>, PacketAccess_> IndicesType;
+  typedef StorageIndex_ StorageIndex;
+  typedef void Scalar;
 };
 }  // namespace internal
 
@@ -374,13 +375,13 @@ template <int SizeAtCompileTime, int MaxSizeAtCompileTime, typename StorageIndex
 class Map<PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime, StorageIndex_>, PacketAccess_>
     : public PermutationBase<
           Map<PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime, StorageIndex_>, PacketAccess_> > {
-  using Base = PermutationBase<Map>;
-  using Traits = internal::traits<Map>;
+  typedef PermutationBase<Map> Base;
+  typedef internal::traits<Map> Traits;
 
  public:
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-  using IndicesType = typename Traits::IndicesType;
-  using StorageIndex = typename IndicesType::Scalar;
+  typedef typename Traits::IndicesType IndicesType;
+  typedef typename IndicesType::Scalar StorageIndex;
 #endif
 
   inline Map(const StorageIndex* indicesPtr) : m_indices(indicesPtr) {}
@@ -418,13 +419,15 @@ class Map<PermutationMatrix<SizeAtCompileTime, MaxSizeAtCompileTime, StorageInde
   IndicesType m_indices;
 };
 
+template <typename IndicesType_>
+class TranspositionsWrapper;
 namespace internal {
 template <typename IndicesType_>
 struct traits<PermutationWrapper<IndicesType_> > {
-  using StorageKind = PermutationStorage;
-  using Scalar = void;
-  using StorageIndex = typename IndicesType_::Scalar;
-  using IndicesType = IndicesType_;
+  typedef PermutationStorage StorageKind;
+  typedef void Scalar;
+  typedef typename IndicesType_::Scalar StorageIndex;
+  typedef IndicesType_ IndicesType;
   enum {
     RowsAtCompileTime = IndicesType_::SizeAtCompileTime,
     ColsAtCompileTime = IndicesType_::SizeAtCompileTime,
@@ -448,12 +451,12 @@ struct traits<PermutationWrapper<IndicesType_> > {
  */
 template <typename IndicesType_>
 class PermutationWrapper : public PermutationBase<PermutationWrapper<IndicesType_> > {
-  using Base = PermutationBase<PermutationWrapper>;
-  using Traits = internal::traits<PermutationWrapper>;
+  typedef PermutationBase<PermutationWrapper> Base;
+  typedef internal::traits<PermutationWrapper> Traits;
 
  public:
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-  using IndicesType = typename Traits::IndicesType;
+  typedef typename Traits::IndicesType IndicesType;
 #endif
 
   inline PermutationWrapper(const IndicesType& indices) : m_indices(indices) {}
@@ -483,18 +486,18 @@ EIGEN_DEVICE_FUNC const Product<PermutationDerived, MatrixDerived, DefaultProduc
 
 template <typename PermutationType>
 class InverseImpl<PermutationType, PermutationStorage> : public EigenBase<Inverse<PermutationType> > {
-  using PlainPermutationType = typename PermutationType::PlainPermutationType;
-  using PermTraits = internal::traits<PermutationType>;
+  typedef typename PermutationType::PlainPermutationType PlainPermutationType;
+  typedef internal::traits<PermutationType> PermTraits;
 
  protected:
-  InverseImpl() = default;
+  InverseImpl() {}
 
  public:
-  using InverseType = Inverse<PermutationType>;
+  typedef Inverse<PermutationType> InverseType;
   using EigenBase<Inverse<PermutationType> >::derived;
 
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-  using DenseMatrixType = typename PermutationType::DenseMatrixType;
+  typedef typename PermutationType::DenseMatrixType DenseMatrixType;
   enum {
     RowsAtCompileTime = PermTraits::RowsAtCompileTime,
     ColsAtCompileTime = PermTraits::ColsAtCompileTime,
@@ -542,7 +545,7 @@ namespace internal {
 
 template <>
 struct AssignmentKind<DenseShape, PermutationShape> {
-  using Kind = EigenBase2EigenBase;
+  typedef EigenBase2EigenBase Kind;
 };
 
 }  // end namespace internal
