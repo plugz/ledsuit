@@ -108,7 +108,7 @@ void DigiLed_setColor(uint8_t led, uint8_t red, uint8_t green, uint8_t blue)
 	if (DigiLed_TestPosition(led) == RANGE_OK)
 	{
 		_digitalLedframe[led].FieldsIn.INIT = 0x7; // Set MSB first 3 bits to identify start of LED packet
-		_digitalLedframe[led].FieldsIn.GLOBAL = 0x1F; // Set led at maximum illumination
+		//_digitalLedframe[led].FieldsIn.GLOBAL = 0x1F; // Set led at maximum illumination
 		_digitalLedframe[led].FieldsIn.BLUE = blue;
 		_digitalLedframe[led].FieldsIn.GREEN = green;
 		_digitalLedframe[led].FieldsIn.RED = red;
@@ -143,8 +143,12 @@ void DigiLed_setAllColor(uint8_t red, uint8_t green, uint8_t blue)
  */
 void DigiLed_setRGB(uint8_t led, uint32_t rgb)
 {
+    if (DigiLed_TestPosition(led) != RANGE_OK) {
+        return;
+    }
+
 	_digitalLedframe[led].FieldsIn.INIT = 0x7;
-	_digitalLedframe[led].FieldsIn.GLOBAL = 0x1F;
+	//_digitalLedframe[led].FieldsIn.GLOBAL = 0x1F;
 	_digitalLedframe[led].FieldsIn.BLUE = (uint8_t)(rgb);
 	_digitalLedframe[led].FieldsIn.GREEN = (uint8_t)(rgb >> 8);
 	_digitalLedframe[led].FieldsIn.RED = (uint8_t)(rgb >> 16);
