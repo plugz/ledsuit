@@ -29,12 +29,10 @@ struct Ball {
         if (position > ((LED_FRAME_SIZE * 1) - 1)) {
             position = (LED_FRAME_SIZE * 1) - 1;
             speed = 0;
-            size = speed * speed * 100;
         }
         if (position < 0) {
             position = 0;
             speed = 0;
-            size = speed * speed * 100;
         }
     }
 };
