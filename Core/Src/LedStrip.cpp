@@ -13,7 +13,7 @@ static bool blinkin = false;
 void ledstrip_init() {
     DigiLed_init(&hspi2);
     DigiLed_setAllRGB(0x00);
-    DigiLed_setAllIllumination(0x01); // 0 - 31    0x00 - 0x1f
+    DigiLed_setAllIllumination(0x1f); // 0 - 31    0x00 - 0x1f
     DigiLed_update(0);
 }
 
@@ -49,7 +49,7 @@ void ledstrip_tick(Eigen::Vector3f const& accelMg, Eigen::Vector3f const& angula
     static Ball balls[3];
 
     static const RgbColor ballColors[3] = {
-        {0x40, 0x00, 0x40},
+        {0xff, 0x00, 0xff},
         {0x00, 0x40, 0x40},
         {0x20, 0x20, 0x20}
     };
