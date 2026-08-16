@@ -1,6 +1,10 @@
 #ifndef __RgbCOLOR_HPP__
 #define __RgbCOLOR_HPP__
 
+namespace Utils {
+template<typename T> T clamp(T const& min, T const& val, T const& max) { return std::max(min, std::min(max, val)); }
+}
+
 class RgbColor {
 public:
     RgbColor() {}
