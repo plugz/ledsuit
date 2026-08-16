@@ -1,5 +1,6 @@
 #include "LedStrip.hpp"
 
+#include "Chrono.hpp"
 #include "DigiLed.h"
 #include "spi.h"
 
@@ -15,11 +16,10 @@ void ledstrip_init() {
 }
 
 void ledstrip_tick(Eigen::Vector3f const& accelMg, Eigen::Vector3f const& angularRateMdps) {
-    static uint32_t prevTime = 0;
-    uint32_t curTime = HAL_GetTick();
-    if (curTime - prevTime <= 2)
+    static Chrono::MsTimer timer(Chrono::Milliseconds(2));
+    if (!timer.done())
         return;
-    prevTime = curTime;
+    timer.advance();
 
     uint8_t rgb[3];
     for (size_t i = 0; i < 3; ++i) {
@@ -29,9 +29,28 @@ void ledstrip_tick(Eigen::Vector3f const& accelMg, Eigen::Vector3f const& angula
         rgb[i] = tmp < 254 ? tmp : 255;
     }
 
+    // tmp
+    {
+        static Chrono::MsTimer timer2{};
+        int colorIdx = (timer2.elapsedTime().count() / 2000) % 7;
+        static constexpr uint8_t colors[7][3] = {
+            {0xff, 0x00, 0x00},
+            {0x00, 0xff, 0x00},
+            {0x00, 0x00, 0xff},
+            {0xff, 0xff, 0x00},
+            {0x00, 0xff, 0xff},
+            {0xff, 0x00, 0xff},
+            {0xff, 0xff, 0xff}
+        };
+        for (size_t i = 0; i < 3; ++i) {
+            rgb[i] = colors[colorIdx][i];
+        }
+    }
+
     for (int i = 0; i < LED_FRAME_SIZE; ++i) {
         DigiLed_setColor(i, rgb[0], rgb[1], rgb[2]);
     }
+
     DigiLed_update(0);
 }
 
