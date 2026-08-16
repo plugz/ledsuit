@@ -61,12 +61,15 @@ void imu_init() {
 
     imu_platform_init();
     imu_platform_delay(IMU_BOOT_TIME);
-    imu_whoamI = 0;
-    lsm6ds3tr_c_device_id_get(&imu_dev_ctx, &imu_whoamI);
-    if (imu_whoamI != LSM6DS3TR_C_ID) {
-        printf("NOT THE CORRECT IMU DEVICE ! FUCK\n");
-        while (1) { HAL_Delay(20); }
-    }
+
+    do {
+        imu_whoamI = 0;
+        lsm6ds3tr_c_device_id_get(&imu_dev_ctx, &imu_whoamI);
+        if (imu_whoamI != LSM6DS3TR_C_ID) {
+            printf("NOT THE CORRECT IMU DEVICE ! FUCK\n");
+            HAL_Delay(20);
+        }
+    } while (imu_whoamI != LSM6DS3TR_C_ID);
 
     lsm6ds3tr_c_reset_set(&imu_dev_ctx, PROPERTY_ENABLE);
 
