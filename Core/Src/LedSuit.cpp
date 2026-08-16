@@ -13,7 +13,7 @@
 #include <cstdio>
 #include <cstring>
 
-#define HISTSIZE 32
+#define HISTSIZE 16
 
 // for debug printf
 // XXX test itm out

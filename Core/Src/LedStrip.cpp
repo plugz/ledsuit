@@ -26,31 +26,37 @@ void ledstrip_tick(Eigen::Vector3f const& accelMg, Eigen::Vector3f const& angula
     RgbColor frame[LED_FRAME_SIZE];
 
     {
-        size_t ballPositions[3];
-        size_t ballSizes[3];
+        float ballPositions[3];
+        float ballSizes[3];
         RgbColor ballColors[3] = {
-            {0x20, 0x00, 0x20},
-            {0x00, 0x20, 0x20},
-            {0x10, 0x10, 0x10}
+            {0x40, 0x00, 0x40},
+            {0x00, 0x40, 0x40},
+            {0x20, 0x20, 0x20}
         };
 
         for (size_t i = 0; i < 3; ++i) {
-            int accel2dG = accelMg[i] / 50.0f;
-            if (accel2dG >= 0) {
-                ballSizes[i] = std::max(1, accel2dG / LED_FRAME_SIZE);
-                ballPositions[i] = ((LED_FRAME_SIZE / 2) + accel2dG) % LED_FRAME_SIZE;
+            float accel2dG = accelMg[i] / 100.0f;
+            if (accel2dG >= 0.0f) {
+                ballSizes[i] = std::max(0.5f, accel2dG / LED_FRAME_SIZE);
+                ballPositions[i] = ((LED_FRAME_SIZE / 2) + accel2dG);
+                ballPositions[i] -= LED_FRAME_SIZE * ((int)ballPositions[i] / LED_FRAME_SIZE); // ballPositions[i] %= LED_FRAME_SIZE
             }
             else {
-                ballSizes[i] = std::max(1, -accel2dG / LED_FRAME_SIZE);
-                ballPositions[i] = (LED_FRAME_SIZE - 1) - (((LED_FRAME_SIZE / 2) - accel2dG) % LED_FRAME_SIZE);
+                ballSizes[i] = std::max(0.5f, -accel2dG / LED_FRAME_SIZE);
+                ballPositions[i] = (LED_FRAME_SIZE / 2) - accel2dG;
+                ballPositions[i] -= LED_FRAME_SIZE * ((int)ballPositions[i] / LED_FRAME_SIZE); // ballPositions[i] %= LED_FRAME_SIZE
+                ballPositions[i] = (LED_FRAME_SIZE - 1) - ballPositions[i];
             }
         }
 
         for (size_t frameIdx = 0; frameIdx < LED_FRAME_SIZE; ++frameIdx) {
             for (size_t i = 0; i < 3; ++i) {
             //size_t i = 0; {
-                if (((LED_FRAME_SIZE + (int)frameIdx - (int)ballPositions[i]) % LED_FRAME_SIZE) <= (int)ballSizes[i]) {
-                    frame[frameIdx] += ballColors[i];
+                float distance = (float)LED_FRAME_SIZE + (float)frameIdx - ballPositions[i];
+                distance -= LED_FRAME_SIZE * ((int)distance / LED_FRAME_SIZE); // distance %= LED_FRAME_SIZE
+                float level = (ballSizes[i] - distance) / 3.0f;
+                if (level > 0) {
+                    frame[frameIdx] += ballColors[i] * level;
                 }
             }
         }

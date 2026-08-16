@@ -14,6 +14,16 @@ public:
         return *this;
     }
 
+    RgbColor operator *(float multiplier) const {
+        int32_t r = _r * multiplier;
+        int32_t g = _g * multiplier;
+        int32_t b = _b * multiplier;
+        r = std::max((int32_t)0, std::min((int32_t)0xff, r));
+        g = std::max((int32_t)0, std::min((int32_t)0xff, g));
+        b = std::max((int32_t)0, std::min((int32_t)0xff, b));
+        return {(uint8_t)r, (uint8_t)g, (uint8_t)b};
+    }
+
     uint8_t r() const { return _r; }
     uint8_t g() const { return _g; }
     uint8_t b() const { return _b; }
