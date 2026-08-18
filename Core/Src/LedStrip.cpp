@@ -22,6 +22,16 @@ static constexpr size_t ANIMATION_COUNT = 10;
 static uint8_t animationsMemory[sizeof(AnimationUnion) * ANIMATION_COUNT];
 static AnimationUnion* animations = (AnimationUnion*)animationsMemory;
 static RgbColor frame[LED_FRAME_SIZE];
+RgbColor* animationRgbFrame = frame;
+
+Animation::Animation* newAnimationMemory() {
+    for (size_t i = 0; i < ANIMATION_COUNT; ++i) {
+        auto animation = (Animation::Animation*)(animations + i);
+        if (animation->done())
+            return animation;
+    }
+    return nullptr;
+}
 
 void ledstrip_init() {
     DigiLed_init(&hspi2);
@@ -31,11 +41,11 @@ void ledstrip_init() {
 
     // fill up with dummy animations
     for (size_t i = 0; i < ANIMATION_COUNT; ++i) {
-        new (animations + i) Animation::Animation(frame);
+        new (animations + i) Animation::Animation();
     }
 
     // ball anim
-    new (animations) Animation::Ball(frame, {0xff, 0xff, 0});
+    new (newAnimationMemory()) Animation::Ball({0xff, 0xff, 0});
 }
 
 void ledstrip_tick(Eigen::Vector3f const& accelMg, Eigen::Vector3f const& angularRateMdps) {

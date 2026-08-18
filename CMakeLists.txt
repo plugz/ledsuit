@@ -58,6 +58,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/OnBoardLeds.cpp
 
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/Animation/Ball.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/Animation/Boom.cpp
 )
 
 # Add include paths

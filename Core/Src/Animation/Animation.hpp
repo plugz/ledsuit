@@ -10,7 +10,7 @@ namespace Animation {
 
 class Animation {
 public:
-    Animation(RgbColor* frame, bool infinite = false) : _frame(frame), _infinite(infinite) {
+    Animation(bool infinite = false) : _infinite(infinite) {
         _timer.reset();
     }
 
@@ -23,11 +23,13 @@ public:
     }
 
 protected:
-    RgbColor* _frame;
     bool _infinite;
     Chrono::MsTimer _timer;
 };
 
 } // namespace Animation
+
+Animation::Animation* newAnimationMemory();
+extern RgbColor* animationRgbFrame;
 
 #endif
