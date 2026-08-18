@@ -4,38 +4,39 @@
 #include "DigiLed.h"
 #include "RgbColor.hpp"
 
+#include "Animation/Ball.hpp"
+
 #include "spi.h"
 
 #include <cmath>
 
 static bool blinkin = false;
 
+union AnimationUnion {
+    Animation::Animation animation;
+    Animation::Ball ball;
+};
+
+static constexpr size_t ANIMATION_COUNT = 10;
+
+static uint8_t animationsMemory[sizeof(AnimationUnion) * ANIMATION_COUNT];
+static AnimationUnion* animations = (AnimationUnion*)animationsMemory;
+static RgbColor frame[LED_FRAME_SIZE];
+
 void ledstrip_init() {
     DigiLed_init(&hspi2);
     DigiLed_setAllRGB(0x00);
     DigiLed_setAllIllumination(0x1f); // 0 - 31    0x00 - 0x1f
     DigiLed_update(0);
-}
 
-struct Ball {
-    float position = 0.0f;
-    float speed = 0.0f;
-    float size = 1.0f;
-
-    void tick(float accel, Chrono::Milliseconds tickTime) {
-        float tickTimeS = (float)tickTime.count() / 1000.0f;
-        speed += accel * 10 * tickTimeS;
-        position += speed * tickTimeS;
-        if (position > ((LED_FRAME_SIZE * 1) - 1)) {
-            position = (LED_FRAME_SIZE * 1) - 1;
-            speed = 0;
-        }
-        if (position < 0) {
-            position = 0;
-            speed = 0;
-        }
+    // fill up with dummy animations
+    for (size_t i = 0; i < ANIMATION_COUNT; ++i) {
+        new (animations + i) Animation::Animation(frame);
     }
-};
+
+    // ball anim
+    new (animations) Animation::Ball(frame, {0xff, 0xff, 0});
+}
 
 void ledstrip_tick(Eigen::Vector3f const& accelMg, Eigen::Vector3f const& angularRateMdps) {
     static Chrono::MsTimer timer(Chrono::Milliseconds(2));
@@ -43,33 +44,17 @@ void ledstrip_tick(Eigen::Vector3f const& accelMg, Eigen::Vector3f const& angula
         return;
     auto tickTime = timer.elapsedTime();
     timer.advance();
+    float tickTimeS = (float)tickTime.count() / 1000.0f;
 
-    RgbColor frame[LED_FRAME_SIZE];
+    // reinit frame
+    for (size_t i = 0; i < LED_FRAME_SIZE; ++i) {
+        new (frame + i) RgbColor();
+    }
 
-    static Ball balls[3];
-
-    static const RgbColor ballColors[3] = {
-        {0xff, 0x00, 0xff},
-        {0x00, 0x40, 0x40},
-        {0x20, 0x20, 0x20}
-    };
-
-    {
-        for (size_t i = 0; i < 3; ++i) {
-            float accelG = -accelMg[i] / 1000.0f;
-            balls[i].tick(accelG, tickTime);
-        }
-
-        for (size_t frameIdx = 0; frameIdx < LED_FRAME_SIZE; ++frameIdx) {
-            //for (size_t i = 0; i < 3; ++i) {
-            size_t i = 0; {
-                float distance = std::abs((float)frameIdx - balls[i].position);
-                float level = (balls[i].size - distance);
-                if (level > 0) {
-                    frame[frameIdx] += ballColors[i] * level;
-                }
-            }
-        }
+    for (size_t i = 0; i < ANIMATION_COUNT; ++i) {
+        Animation::Animation* animation = (Animation::Animation*)(animations + i);
+        if (!animation->done())
+            animation->tick(tickTimeS, accelMg, angularRateMdps);
     }
 
     for (int i = 0; i < LED_FRAME_SIZE; ++i) {

@@ -49,19 +49,21 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
 
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/DigiLed.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/lsm6ds3tr-c_reg.c
+
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/Imu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/LedStrip.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/LedSuit.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/OnBoardLeds.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/DigiLed.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/lsm6ds3tr-c_reg.c
-
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/Animation/Ball.cpp
 )
 
 # Add include paths
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined include paths
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src
 )
 
 option(USB_DEBUG_OUTPUT "printf on " OFF)
