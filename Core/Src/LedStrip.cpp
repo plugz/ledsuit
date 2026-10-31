@@ -5,6 +5,7 @@
 #include "RgbColor.hpp"
 
 #include "Animation/Ball.hpp"
+#include "Animation/Breathing.hpp"
 #include "Animation/Plain.hpp"
 
 #include "spi.h"
@@ -45,10 +46,11 @@ void ledstrip_init() {
         new (animations + i) Animation::Animation();
     }
 
-    // ball anim
+    // anims
     new (newAnimationMemory()) Animation::Ball({0xff, 0xff, 0});
-    // plain anim
-    //new (newAnimationMemory()) Animation::Plain({0x01, 0x00, 0x01);
+    new (newAnimationMemory()) Animation::Breathing({0x30, 0x00, 0x30}, Chrono::Milliseconds(2000));
+    new (newAnimationMemory()) Animation::Breathing({0x30, 0x00, 0x00}, Chrono::Milliseconds(3330));
+    new (newAnimationMemory()) Animation::Breathing({0x00, 0x00, 0x30}, Chrono::Milliseconds(1455));
 }
 
 void ledstrip_tick(Eigen::Vector3f const& accelMg, Eigen::Vector3f const& angularRateMdps) {
