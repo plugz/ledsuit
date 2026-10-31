@@ -14,7 +14,7 @@
 #include <cstdio>
 #include <cstring>
 
-#define HISTSIZE 16
+#define HISTSIZE 4
 
 // for debug printf
 // XXX test itm out
@@ -60,17 +60,17 @@ void ledsuit_tick() {
 
     imu_tick();
 
-    imu_accel_fetch(&accelMgAvg);
+    //imu_accel_fetch(&accelMgAvg);
 
-    //if (imu_accel_fetch(accelMg + accelIdx)) {
-    //    accelIdx = (accelIdx + 1) % std::size(accelMg);
+    if (imu_accel_fetch(accelMg + accelIdx)) {
+        accelIdx = (accelIdx + 1) % std::size(accelMg);
 
-    //    accelMgAvg << 0, 0, 0;
-    //    for (size_t i = 0; i < std::size(accelMg); ++i) {
-    //        accelMgAvg += accelMg[i];
-    //    }
-    //    accelMgAvg /= std::size(accelMg);
-    //}
+        accelMgAvg << 0, 0, 0;
+        for (size_t i = 0; i < std::size(accelMg); ++i) {
+            accelMgAvg += accelMg[i];
+        }
+        accelMgAvg /= std::size(accelMg);
+    }
 
     if (imu_angular_rate_fetch(angularRateMdps + angularRateIdx)) {
         angularRateIdx = (angularRateIdx + 1) % std::size(angularRateMdps);

@@ -6,6 +6,7 @@
 
 #include "Animation/Ball.hpp"
 #include "Animation/Breathing.hpp"
+#include "Animation/HatBall.hpp"
 #include "Animation/Plain.hpp"
 
 #include "spi.h"
@@ -38,7 +39,7 @@ Animation::Animation* newAnimationMemory() {
 void ledstrip_init() {
     DigiLed_init(&hspi2);
     DigiLed_setAllRGB(0x00);
-    DigiLed_setAllIllumination(0x01); // 0 - 31    0x00 - 0x1f
+    DigiLed_setAllIllumination(0x1f); // 0 - 31    0x00 - 0x1f
     DigiLed_update(0);
 
     // fill up with dummy animations
@@ -47,10 +48,10 @@ void ledstrip_init() {
     }
 
     // anims
-    new (newAnimationMemory()) Animation::Ball({0xff, 0xff, 0});
-    new (newAnimationMemory()) Animation::Breathing({0x30, 0x00, 0x30}, Chrono::Milliseconds(2000));
-    new (newAnimationMemory()) Animation::Breathing({0x30, 0x00, 0x00}, Chrono::Milliseconds(3330));
-    new (newAnimationMemory()) Animation::Breathing({0x00, 0x00, 0x30}, Chrono::Milliseconds(1455));
+    new (newAnimationMemory()) Animation::HatBall({0xff, 0x99, 0});
+    new (newAnimationMemory()) Animation::Breathing({0x10, 0x00, 0x10}, Chrono::Milliseconds(2000));
+    //new (newAnimationMemory()) Animation::Breathing({0x10, 0x00, 0x00}, Chrono::Milliseconds(3330));
+    //new (newAnimationMemory()) Animation::Breathing({0x00, 0x00, 0x10}, Chrono::Milliseconds(1455));
 }
 
 void ledstrip_tick(Eigen::Vector3f const& accelMg, Eigen::Vector3f const& angularRateMdps) {
