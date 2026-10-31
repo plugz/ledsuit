@@ -5,6 +5,7 @@
 #include "RgbColor.hpp"
 
 #include "Animation/Ball.hpp"
+#include "Animation/Plain.hpp"
 
 #include "spi.h"
 
@@ -36,7 +37,7 @@ Animation::Animation* newAnimationMemory() {
 void ledstrip_init() {
     DigiLed_init(&hspi2);
     DigiLed_setAllRGB(0x00);
-    DigiLed_setAllIllumination(0x1f); // 0 - 31    0x00 - 0x1f
+    DigiLed_setAllIllumination(0x01); // 0 - 31    0x00 - 0x1f
     DigiLed_update(0);
 
     // fill up with dummy animations
@@ -46,6 +47,8 @@ void ledstrip_init() {
 
     // ball anim
     new (newAnimationMemory()) Animation::Ball({0xff, 0xff, 0});
+    // plain anim
+    //new (newAnimationMemory()) Animation::Plain({0x01, 0x00, 0x01);
 }
 
 void ledstrip_tick(Eigen::Vector3f const& accelMg, Eigen::Vector3f const& angularRateMdps) {
