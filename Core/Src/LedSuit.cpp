@@ -1,5 +1,6 @@
 #include "ledsuit.h"
 
+#include "Chrono.hpp"
 #include "Imu.hpp"
 #include "LedStrip.hpp"
 #include "OnBoardLeds.hpp"
@@ -32,6 +33,10 @@
 //}
 //#endif
 
+
+// Show onboard leds at startup
+static Chrono::MsTimer ledStartupTimer;
+
 void ledsuit_init_beforeloop() {
     HAL_Delay(200); // let low-level stuff initialize
 
@@ -40,6 +45,9 @@ void ledsuit_init_beforeloop() {
     ledstrip_init();
 
     imu_init();
+
+    // Show onboard leds at startup
+    ledStartupTimer.reset(Chrono::Milliseconds(8192));
 }
 
 void ledsuit_tick() {
@@ -75,4 +83,12 @@ void ledsuit_tick() {
     }
 
     ledstrip_tick(accelMgAvg, angularRateMdpsAvg);
+
+    // Show onboard leds at startup
+    uint8_t ledVal = 0;
+    if (!ledStartupTimer.done()) {
+        ledVal = (8192 - ledStartupTimer.elapsedTime().count()) / (8192 / 256);
+    }
+    pxm_led_set(0, ledVal);
+    pxm_led_set(1, ledVal);
 }
