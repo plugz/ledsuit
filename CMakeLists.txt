@@ -62,6 +62,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/Animation/Breathing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/Animation/HatBall.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/Animation/Plain.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/Animation/Strobe.cpp
 )
 
 # Add include paths

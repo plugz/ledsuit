@@ -8,6 +8,7 @@
 #include "Animation/Breathing.hpp"
 #include "Animation/HatBall.hpp"
 #include "Animation/Plain.hpp"
+#include "Animation/Strobe.hpp"
 
 #include "spi.h"
 
@@ -48,10 +49,12 @@ void ledstrip_init() {
     }
 
     // anims
-    new (newAnimationMemory()) Animation::HatBall({0xff, 0x99, 0});
-    new (newAnimationMemory()) Animation::Breathing({0x10, 0x00, 0x10}, Chrono::Milliseconds(2000));
+    //new (newAnimationMemory()) Animation::HatBall({0xff, 0x99, 0});
+    //new (newAnimationMemory()) Animation::Breathing({0x10, 0x00, 0x10}, Chrono::Milliseconds(2000));
     //new (newAnimationMemory()) Animation::Breathing({0x10, 0x00, 0x00}, Chrono::Milliseconds(3330));
     //new (newAnimationMemory()) Animation::Breathing({0x00, 0x00, 0x10}, Chrono::Milliseconds(1455));
+    new (newAnimationMemory()) Animation::Plain({0xff, 0xff, 0xff});
+    //new (newAnimationMemory()) Animation::Strobe({0xff, 0xff, 0xff}, {0x00, 0x00, 0x00}, Chrono::Milliseconds{25}, Chrono::Milliseconds{75});
 }
 
 void ledstrip_tick(Eigen::Vector3f const& accelMg, Eigen::Vector3f const& angularRateMdps) {

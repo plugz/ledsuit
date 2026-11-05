@@ -11,7 +11,7 @@ void Breathing::tick(float tickTime,
     (void)accelMg;
     (void)angularRateMdps;
 
-    _timer.advance();
+    _timer.advance(_period);
 
     float elapsedS = (float)_timer.elapsedTime().count() / 1000.0f;
     float periodS = (float)_period.count() / 1000.0f;
@@ -24,4 +24,3 @@ void Breathing::tick(float tickTime,
 }
 
 } // namespace Animation
-
