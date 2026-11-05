@@ -64,6 +64,8 @@ Eigen::Vector3f stripBottomCirclePositions[15] = {
 static Animation::StripPart stripBottomCircle{frame, 15, stripBottomCirclePositions};
 static Animation::StripPart stripMiddleLine{frame + 15, 19, nullptr};
 static Animation::StripPart stripTop{frame + 15 + 19, 1, nullptr};
+
+static Animation::StripPart stripMiddleAndTop{frame + 15, 20, nullptr};
 static Animation::StripPart stripAll{frame, 35, nullptr};
 
 // init
@@ -82,8 +84,9 @@ void ledstrip_init() {
     // anims
     new (newAnimationMemory()) Animation::HatBall(&stripBottomCircle, {0xff, 0x99, 0});
     new (newAnimationMemory()) Animation::Ball(&stripMiddleLine, {0xff, 0x99, 0});
-    new (newAnimationMemory()) Animation::Breathing(&stripTop, {0x50, 0x20, 0}, Chrono::Milliseconds(2000));
-    new (newAnimationMemory()) Animation::Strobe(&stripTop, {0xff, 0xff, 0xff}, {0x00, 0x00, 0x00}, Chrono::Milliseconds{25}, Chrono::Milliseconds{475});
+    new (newAnimationMemory()) Animation::Breathing(&stripMiddleAndTop, {0xff, 0x00, 0xaa}, Chrono::Milliseconds(6000));
+    new (newAnimationMemory()) Animation::Breathing(&stripTop, {0x00, 0x00, 0x10}, Chrono::Milliseconds(5134));
+    //new (newAnimationMemory()) Animation::Strobe(&stripTop, {0xff, 0xff, 0xff}, {0x00, 0x00, 0x00}, Chrono::Milliseconds{25}, Chrono::Milliseconds{4512});
 }
 
 // tick
