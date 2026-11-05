@@ -8,9 +8,17 @@ struct RgbColor;
 
 namespace Animation {
 
+struct StripPart {
+    RgbColor*              begin = nullptr;
+    size_t                 size = 0;
+    Eigen::Vector3f const* positions = nullptr;
+};
+
 class Animation {
 public:
-    Animation(bool infinite = false) : _infinite(infinite) {
+    Animation(StripPart* stripPart = nullptr, bool infinite = false) :
+        _stripPart(*stripPart),
+        _infinite(infinite) {
         _timer.reset();
     }
 
@@ -23,6 +31,7 @@ public:
     }
 
 protected:
+    StripPart& _stripPart;
     bool _infinite;
     Chrono::MsTimer _timer;
 };
@@ -30,6 +39,5 @@ protected:
 } // namespace Animation
 
 Animation::Animation* newAnimationMemory();
-extern RgbColor* animationRgbFrame;
 
 #endif

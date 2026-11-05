@@ -8,9 +8,9 @@ namespace Animation {
 
 class Strobe : public Animation {
 public:
-    Strobe(RgbColor color0, RgbColor color1,
+    Strobe(StripPart* stripPart, RgbColor color0, RgbColor color1,
            Chrono::Milliseconds period0, Chrono::Milliseconds period1) :
-        Animation(true),
+        Animation(stripPart, true),
         _color0(color0),
         _color1(color1),
         _period0(period0),

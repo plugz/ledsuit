@@ -8,8 +8,8 @@ namespace Animation {
 
 class Plain : public Animation {
 public:
-    Plain(RgbColor color) :
-        Animation(true),
+    Plain(StripPart* stripPart, RgbColor color) :
+        Animation(stripPart, true),
         _color(color) {
         }
 

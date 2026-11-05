@@ -8,7 +8,7 @@ namespace Animation {
 
 class HatBall : public Animation {
 public:
-    HatBall(RgbColor color);
+    HatBall(StripPart* stripPart, RgbColor color);
 
     virtual void tick(float tickTime,
             Eigen::Vector3f const& accelMg,

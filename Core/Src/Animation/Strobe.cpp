@@ -1,7 +1,5 @@
 #include "Strobe.hpp"
 
-#include "DigiLed.h"
-
 namespace Animation {
 
 void Strobe::tick(float tickTime,
@@ -21,8 +19,8 @@ void Strobe::tick(float tickTime,
     else
         color = _color1;
 
-    for (size_t frameIdx = 0; frameIdx < LED_FRAME_SIZE; ++frameIdx) {
-        animationRgbFrame[frameIdx] += color;
+    for (size_t frameIdx = 0; frameIdx < _stripPart.size; ++frameIdx) {
+        _stripPart.begin[frameIdx] += color;
     }
 }
 

@@ -1,7 +1,5 @@
 #include "Breathing.hpp"
 
-#include "DigiLed.h"
-
 namespace Animation {
 
 void Breathing::tick(float tickTime,
@@ -18,8 +16,8 @@ void Breathing::tick(float tickTime,
 
     float level = (sin((elapsedS / periodS) * 2 * M_PI) + 1.0f) / 2.0f;
 
-    for (size_t frameIdx = 0; frameIdx < LED_FRAME_SIZE; ++frameIdx) {
-        animationRgbFrame[frameIdx] += _color * level;
+    for (size_t frameIdx = 0; frameIdx < _stripPart.size; ++frameIdx) {
+        _stripPart.begin[frameIdx] += _color * level;
     }
 }
 

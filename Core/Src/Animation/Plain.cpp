@@ -1,7 +1,5 @@
 #include "Plain.hpp"
 
-#include "DigiLed.h"
-
 namespace Animation {
 
 void Plain::tick(float tickTime,
@@ -12,8 +10,8 @@ void Plain::tick(float tickTime,
     (void)accelMg;
     (void)angularRateMdps;
 
-    for (size_t frameIdx = 0; frameIdx < LED_FRAME_SIZE; ++frameIdx) {
-        animationRgbFrame[frameIdx] += _color;
+    for (size_t frameIdx = 0; frameIdx < _stripPart.size; ++frameIdx) {
+        _stripPart.begin[frameIdx] += _color;
     }
 }
 

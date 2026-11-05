@@ -8,8 +8,8 @@ namespace Animation {
 
 class Boom : public Animation {
 public:
-    Boom(RgbColor color, float position, float power) :
-        Animation(false),
+    Boom(StripPart* stripPart, RgbColor color, float position, float power) :
+        Animation(stripPart, false),
         _color(color),
         _position(position),
         _power(power) {

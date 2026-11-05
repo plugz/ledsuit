@@ -1,7 +1,6 @@
 #include "Ball.hpp"
-#include "Boom.hpp"
 
-#include "DigiLed.h"
+#include "Boom.hpp"
 
 namespace Animation {
 
@@ -13,10 +12,10 @@ void Ball::tick(float tickTime,
     _speed += accel * 100 * tickTime;
     _position += _speed * tickTime;
 
-    if (_position > ((LED_FRAME_SIZE * 1) - 1)) {
+    if (_position > ((_stripPart.size * 1) - 1)) {
         if (_speed != accel * 100 * tickTime)
             _createBoom(_speed);
-        _position = (LED_FRAME_SIZE * 1) - 1;
+        _position = (_stripPart.size * 1) - 1;
         _speed = 0;
     }
     else if (_position < 0) {
@@ -26,11 +25,11 @@ void Ball::tick(float tickTime,
         _speed = 0;
     }
 
-    for (size_t frameIdx = 0; frameIdx < LED_FRAME_SIZE; ++frameIdx) {
+    for (size_t frameIdx = 0; frameIdx < _stripPart.size; ++frameIdx) {
         float distance = std::abs((float)frameIdx - _position);
         float level = (_size - distance);
         if (level > 0) {
-            animationRgbFrame[frameIdx] += _color * level;
+            _stripPart.begin[frameIdx] += _color * level;
         }
     }
 }
@@ -40,7 +39,7 @@ void Ball::_createBoom(float power) {
     if (!newAnim)
         return;
 
-    new (newAnim) Boom(_color, _position, power / 10.0f);
+    new (newAnim) Boom(&_stripPart, _color, _position, power / 10.0f);
 }
 
 } // namespace Animation

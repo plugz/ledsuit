@@ -8,8 +8,8 @@ namespace Animation {
 
 class Ball : public Animation {
 public:
-    Ball(RgbColor color) :
-        Animation(true),
+    Ball(StripPart* stripPart, RgbColor color) :
+        Animation(stripPart, true),
         _color(color) {
         }
 

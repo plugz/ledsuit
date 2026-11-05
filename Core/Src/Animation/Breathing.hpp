@@ -8,8 +8,8 @@ namespace Animation {
 
 class Breathing : public Animation {
 public:
-    Breathing(RgbColor color, Chrono::Milliseconds period) :
-        Animation(true),
+    Breathing(StripPart* stripPart, RgbColor color, Chrono::Milliseconds period) :
+        Animation(stripPart, true),
         _color(color),
         _period(period) {
         }

@@ -14,19 +14,21 @@
 
 #include <cmath>
 
-static bool blinkin = false;
+// Animation stuff
 
 union AnimationUnion {
     Animation::Animation animation;
     Animation::Ball ball;
+    Animation::Breathing breathing;
+    Animation::HatBall hatball;
+    Animation::Plain plain;
+    Animation::Strobe strobe;
 };
 
 static constexpr size_t ANIMATION_COUNT = 10;
 
 static uint8_t animationsMemory[sizeof(AnimationUnion) * ANIMATION_COUNT];
 static AnimationUnion* animations = (AnimationUnion*)animationsMemory;
-static RgbColor frame[LED_FRAME_SIZE];
-RgbColor* animationRgbFrame = frame;
 
 Animation::Animation* newAnimationMemory() {
     for (size_t i = 0; i < ANIMATION_COUNT; ++i) {
@@ -36,6 +38,35 @@ Animation::Animation* newAnimationMemory() {
     }
     return nullptr;
 }
+
+// Strip Parts
+
+static RgbColor frame[LED_FRAME_SIZE];
+
+Eigen::Vector3f stripBottomCirclePositions[15] = {
+    {-2.0f, -5.0f, 0.0f},
+    {-8.0f, -4.0f, 0.0f},
+    {-4.0f, -3.0f, 0.0f},
+    {-5.0f, -2.5f, 0.0f},
+    {-4.0f, 0.5f, 0.0f},
+    {-3.0f, 3.0f, 0.0f},
+    {-2.0f, 4.0f, 0.0f},
+    {0.0f, 4.9f, 0.0f},
+    {2.0f, 4.0f, 0.0f},
+    {3.0f, 3.0f, 0.0f},
+    {4.0f, 0.5f, 0.0f},
+    {4.9f, -2.5f, 0.0f},
+    {4.0f, -3.0f, 0.0f},
+    {3.0f, -4.0f, 0.0f},
+    {2.0f, -5.5f, 0.0f},
+};
+
+static Animation::StripPart stripBottomCircle{frame, 15, stripBottomCirclePositions};
+static Animation::StripPart stripMiddleLine{frame + 15, 19, nullptr};
+static Animation::StripPart stripTop{frame + 15 + 19, 1, nullptr};
+static Animation::StripPart stripAll{frame, 35, nullptr};
+
+// init
 
 void ledstrip_init() {
     DigiLed_init(&hspi2);
@@ -49,13 +80,13 @@ void ledstrip_init() {
     }
 
     // anims
-    //new (newAnimationMemory()) Animation::HatBall({0xff, 0x99, 0});
-    //new (newAnimationMemory()) Animation::Breathing({0x10, 0x00, 0x10}, Chrono::Milliseconds(2000));
-    //new (newAnimationMemory()) Animation::Breathing({0x10, 0x00, 0x00}, Chrono::Milliseconds(3330));
-    //new (newAnimationMemory()) Animation::Breathing({0x00, 0x00, 0x10}, Chrono::Milliseconds(1455));
-    new (newAnimationMemory()) Animation::Plain({0xff, 0xff, 0xff});
-    //new (newAnimationMemory()) Animation::Strobe({0xff, 0xff, 0xff}, {0x00, 0x00, 0x00}, Chrono::Milliseconds{25}, Chrono::Milliseconds{75});
+    new (newAnimationMemory()) Animation::HatBall(&stripBottomCircle, {0xff, 0x99, 0});
+    new (newAnimationMemory()) Animation::Ball(&stripMiddleLine, {0xff, 0x99, 0});
+    new (newAnimationMemory()) Animation::Breathing(&stripTop, {0x50, 0x20, 0}, Chrono::Milliseconds(2000));
+    new (newAnimationMemory()) Animation::Strobe(&stripTop, {0xff, 0xff, 0xff}, {0x00, 0x00, 0x00}, Chrono::Milliseconds{25}, Chrono::Milliseconds{475});
 }
+
+// tick
 
 void ledstrip_tick(Eigen::Vector3f const& accelMg, Eigen::Vector3f const& angularRateMdps) {
     static Chrono::MsTimer timer(Chrono::Milliseconds(2));
@@ -81,8 +112,4 @@ void ledstrip_tick(Eigen::Vector3f const& accelMg, Eigen::Vector3f const& angula
     }
 
     DigiLed_update(0);
-}
-
-void ledstrip_setblinkin(bool b) {
-    blinkin = b;
 }

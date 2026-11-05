@@ -1,14 +1,12 @@
 #include "HatBall.hpp"
 #include "Boom.hpp"
 
-#include "DigiLed.h"
-
 namespace Animation {
 
-HatBall::HatBall(RgbColor color) :
-    Animation(true),
+HatBall::HatBall(StripPart* stripPart, RgbColor color) :
+    Animation(stripPart, true),
     _color(color) {
-    _position = LED_FRAME_SIZE / 2;
+    _position = _stripPart.size / 2;
 }
 
 
@@ -24,16 +22,16 @@ void HatBall::tick(float tickTime,
     _position += _speed * tickTime;
 
     while (_position < 0)
-        _position += LED_FRAME_SIZE;
-    while (_position > LED_FRAME_SIZE)
-        _position -= LED_FRAME_SIZE;
+        _position += _stripPart.size;
+    while (_position > _stripPart.size)
+        _position -= _stripPart.size;
 
 
-    for (size_t frameIdx = 0; frameIdx < LED_FRAME_SIZE; ++frameIdx) {
+    for (size_t frameIdx = 0; frameIdx < _stripPart.size; ++frameIdx) {
         float distance = std::abs((float)frameIdx - _position);
         float level = (_size - distance);
         if (level > 0) {
-            animationRgbFrame[frameIdx] += _color * level;
+            _stripPart.begin[frameIdx] += _color * level;
         }
     }
 

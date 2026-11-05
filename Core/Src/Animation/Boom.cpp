@@ -1,7 +1,5 @@
 #include "Boom.hpp"
 
-#include "DigiLed.h"
-
 namespace Animation {
 
 void Boom::tick(float tickTime,
@@ -16,15 +14,15 @@ void Boom::tick(float tickTime,
     else
         size = _power * ((0.9f - (elapsedS - 0.1f)) / 0.9f);
 
-    for (size_t frameIdx = 0; frameIdx < LED_FRAME_SIZE; ++frameIdx) {
+    for (size_t frameIdx = 0; frameIdx < _stripPart.size; ++frameIdx) {
         float distance = std::abs((float)frameIdx - _position);
         float level = (size - distance);
         for (int i = 8; i >= 2; --i) {
             if (level > i)
-                animationRgbFrame[frameIdx] += RgbColor{0x20, 0x20, 0x20};
+                _stripPart.begin[frameIdx] += RgbColor{0x20, 0x20, 0x20};
         }
         if (level > 0) {
-            animationRgbFrame[frameIdx] += _color * level;
+            _stripPart.begin[frameIdx] += _color * level;
         }
     }
 }
