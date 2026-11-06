@@ -269,7 +269,8 @@ void DigiLed_update(uint8_t forceUpdate)
 		}
 
 		// send spi frame with all led values
-		HAL_SPI_Transmit(_spiHandler, SpiSendFrame, sizeof(SpiSendFrame), 10);
+        if (HAL_SPI_GetState(_spiHandler) == HAL_SPI_STATE_READY)
+		HAL_SPI_Transmit_DMA(_spiHandler, SpiSendFrame, sizeof(SpiSendFrame));
 	}
 
 	_frameModified = FALSE; // reset frame modified identifier.
